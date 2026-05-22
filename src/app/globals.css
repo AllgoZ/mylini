@@ -5,38 +5,38 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Brand Core Colors */
-  --color-clay: #C4654A;
-  --color-clay-deep: #9B3E24;
-  --color-clay-soft: #E8927A;
-  --color-rose: #D4826A;
-  --color-rose-pale: #F5DDD6;
-  --color-rose-blush: #FBF0EC;
+  /* Brand Core Colors (From Reference Image) */
+  --color-clay: #2B170B;       /* --dark-coffee-2 (Accents / Headings) */
+  --color-clay-deep: #35200F;  /* --dark-coffee-3 (Buttons / Active elements) */
+  --color-clay-soft: #392819;  /* --dark-coffee */
+  --color-rose: #392819;       /* Secondary coffee brown */
+  --color-rose-pale: #EEDBCD;  /* --powder-petal */
+  --color-rose-blush: #FAF5F2; /* Parchment Warm Cards */
   
   /* Accent Colors */
-  --color-sage: #7A9E87;
-  --color-sage-light: #B8D4C0;
-  --color-gold: #C9A96E;
-  --color-gold-pale: #F0E6D3;
+  --color-sage: #5A6D5D;       /* Soothing muted green */
+  --color-sage-light: #C4D0C6;
+  --color-gold: #B89355;       /* Soothing antique gold */
+  --color-gold-pale: #EEDBCD;  /* --powder-petal */
 
-  /* Neutral Warm Palette */
-  --color-ink: #1C1410;
-  --color-text: #4A3728;
-  --color-text-mid: #7A6255;
-  --color-text-light: #B09A8C;
-  --color-canvas: #FFFCF9;
-  --color-canvas-warm: #FDF7F3;
-  --color-surface: #FBF4EF;
-  --color-surface-2: #F5EDE6;
-  --color-border-brand: #EAD9CF;
-  --color-border-soft: #F2E6DE;
+  /* Neutral Soothing Warm Palette */
+  --color-ink: #2B170B;         /* --dark-coffee-2 (Highly visible title ink) */
+  --color-text: #35200F;        /* --dark-coffee-3 (Highly readable primary text) */
+  --color-text-mid: #392819;    /* --dark-coffee (Clear and sharp secondary text) */
+  --color-text-light: #605045;  /* Muted but high-contrast text for secondary elements */
+  --color-canvas: #F9F4F1;      /* --parchment (Extremely soothing background) */
+  --color-canvas-warm: #FAF5F2; /* Soothing warm parchment background */
+  --color-surface: #FAF5F2;     /* Parchment cards */
+  --color-surface-2: #EEDBCD;   /* --powder-petal */
+  --color-border-brand: #EEDBCD;/* --powder-petal */
+  --color-border-soft: #EADAD2; /* Visible soft border */
 
   /* iOS-Style Elevation */
-  --shadow-s1: 0 1px 3px rgba(76, 35, 20, 0.06);
-  --shadow-s2: 0 2px 8px rgba(76, 35, 20, 0.08);
-  --shadow-s3: 0 4px 20px rgba(76, 35, 20, 0.10);
-  --shadow-s4: 0 8px 32px rgba(76, 35, 20, 0.13);
-  --shadow-s5: 0 16px 48px rgba(76, 35, 20, 0.16);
+  --shadow-s1: 0 1px 3px rgba(43, 23, 11, 0.04);
+  --shadow-s2: 0 2px 8px rgba(43, 23, 11, 0.06);
+  --shadow-s3: 0 4px 20px rgba(43, 23, 11, 0.08);
+  --shadow-s4: 0 8px 32px rgba(43, 23, 11, 0.10);
+  --shadow-s5: 0 16px 48px rgba(43, 23, 11, 0.12);
 
   /* iOS Generous Radius Scale */
   --radius-xs: 8px;
@@ -46,9 +46,9 @@
   --radius-xl: 28px;
   --radius-2xl: 36px;
 
-  /* Editorial Fonts */
-  --font-head: var(--font-fraunces), Georgia, serif;
-  --font-body: var(--font-nunito), system-ui, sans-serif;
+  /* Editorial Fonts (Soothing & iOS Readable) */
+  --font-head: var(--font-playfair), Georgia, serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
 
   /* Animation Easing */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -93,24 +93,24 @@
 }
 
 :root {
-  --background: #FFFCF9;
-  --foreground: #4A3728;
-  --card: #FDF7F3;
-  --card-foreground: #4A3728;
-  --popover: #FFFCF9;
-  --popover-foreground: #4A3728;
-  --primary: #9B3E24;
+  --background: #F9F4F1;        /* --parchment */
+  --foreground: #2B170B;        /* --dark-coffee-2 */
+  --card: #FAF5F2;
+  --card-foreground: #2B170B;
+  --popover: #F9F4F1;
+  --popover-foreground: #2B170B;
+  --primary: #35200F;           /* --dark-coffee-3 */
   --primary-foreground: #ffffff;
-  --secondary: #F5EDE6;
-  --secondary-foreground: #7A6255;
-  --muted: #FBF4EF;
-  --muted-foreground: #B09A8C;
-  --accent: #F5DDD6;
-  --accent-foreground: #9B3E24;
-  --destructive: #e53935;
-  --border: #EAD9CF;
-  --input: #F2E6DE;
-  --ring: #E8927A;
+  --secondary: #EEDBCD;         /* --powder-petal */
+  --secondary-foreground: #392819;
+  --muted: #FAF5F2;
+  --muted-foreground: #605045;  /* Higher contrast secondary */
+  --accent: #EEDBCD;
+  --accent-foreground: #2B170B;
+  --destructive: #d32f2f;
+  --border: #EEDBCD;
+  --input: #EADAD2;
+  --ring: #EEDBCD;
   
   --radius: 0.625rem;
   

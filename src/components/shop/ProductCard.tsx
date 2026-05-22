@@ -20,7 +20,14 @@ interface ProductCardProps {
 export function ProductCard({ product, gradient = 'from-[#E8C9B8] to-[#B87050]', emoji = '👗', delay = 0 }: ProductCardProps) {
   const { hasItem, toggleItem } = useWishStore();
   const { addItem } = useCartStore();
-  const isWished = hasItem(product.id);
+  
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isWished = mounted ? hasItem(product.id) : false;
 
   const [isHovered, setIsHovered] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -181,15 +188,15 @@ export function ProductCard({ product, gradient = 'from-[#E8C9B8] to-[#B87050]',
               <span className="text-[0.72rem] text-text-light">({product.reviews || 0})</span>
             </div>
             <div className="flex items-baseline gap-[7px] flex-wrap">
-              <span className="font-head text-[1.05rem] font-bold text-ink">
+              <span className="font-body text-[1.1rem] font-extrabold text-ink tracking-tight">
                 ₹{product.price.toLocaleString('en-IN')}
               </span>
               {product.oldPrice && (
                 <>
-                  <span className="text-[0.8rem] text-text-light line-through">
+                  <span className="font-body text-[0.8rem] font-medium text-text-light/80 line-through">
                     ₹{product.oldPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-[0.72rem] font-bold text-sage">
+                  <span className="font-body text-[0.72rem] font-bold text-sage">
                     −{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
                   </span>
                 </>

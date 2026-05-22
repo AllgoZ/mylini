@@ -1,11 +1,21 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronRight, Heart, Award, Sparkles, Smile } from 'lucide-react';
 
 export default function AboutPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-canvas" />;
+  }
   const containerVariants = {
     hidden: { opacity: 0 },
     show: {
@@ -49,14 +59,14 @@ export default function AboutPage() {
       {/* Editorial Header */}
       <section className="bg-surface py-20 border-b border-border-soft">
         <div className="w-full mx-auto px-4 md:px-8 lg:px-12 text-center max-w-3xl">
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-[0.72rem] font-bold tracking-[0.15em] uppercase text-clay mb-3"
           >
             Our Journey & Philosophy
           </motion.p>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -65,7 +75,7 @@ export default function AboutPage() {
             From a Mother's Heart<br />
             <em className="italic text-clay-deep not-italic font-normal">to a Luxury Boutique</em>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -79,22 +89,22 @@ export default function AboutPage() {
       {/* Narrative Section */}
       <section className="w-full mx-auto px-4 md:px-8 lg:px-12 py-16 lg:py-24 max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
             className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-s3 border border-border-soft"
           >
-            <Image 
-              src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80" 
-              alt="Mylini Craftsmanship & Traditional Wear" 
-              fill 
+            <Image
+              src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80"
+              alt="Mylini Craftsmanship & Traditional Wear"
+              fill
               className="object-cover"
             />
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="show"
@@ -110,7 +120,7 @@ export default function AboutPage() {
             <motion.p variants={itemVariants} className="text-text-mid text-[0.95rem] leading-[1.7]">
               We set out to change that. Mylini fuses India’s rich textile heritage with meticulous garment engineering. Each piece is constructed with <strong>pre-washed premium silks</strong> and lined with a signature, highly breathable 100% pre-washed cotton underskirt to ensure scratch-free, all-day festive play.
             </motion.p>
-            
+
             <motion.div variants={itemVariants} className="grid grid-cols-3 gap-4 py-4 border-t border-b border-border-soft mt-2">
               <div className="text-center">
                 <span className="font-head text-2xl font-bold text-clay-deep">10K+</span>
@@ -136,8 +146,8 @@ export default function AboutPage() {
             <h2 className="font-head text-3xl font-bold text-ink mb-4">The Pillars of Mylini</h2>
             <p className="text-text-mid text-[0.9rem]">Every outfit is designed based on four uncompromising principles that guide our craft.</p>
           </div>
-          
-          <motion.div 
+
+          <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="show"
@@ -145,7 +155,7 @@ export default function AboutPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
           >
             {values.map((val, idx) => (
-              <motion.div 
+              <motion.div
                 key={idx}
                 variants={itemVariants}
                 className="bg-white rounded-2xl p-6 border border-border-soft shadow-s1 flex flex-col items-start gap-4 hover:shadow-s2 transition-shadow"

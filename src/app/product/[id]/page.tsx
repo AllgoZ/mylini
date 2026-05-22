@@ -145,11 +145,11 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           </div>
 
           <div className="flex items-baseline gap-3 flex-wrap mb-1.5">
-            <span className="font-head text-[1.9rem] font-bold text-ink">₹{product.price.toLocaleString('en-IN')}</span>
+            <span className="font-body text-[2rem] font-extrabold text-ink tracking-tight">₹{product.price.toLocaleString('en-IN')}</span>
             {product.oldPrice && (
               <>
-                <span className="text-[1.05rem] text-text-light line-through">₹{product.oldPrice.toLocaleString('en-IN')}</span>
-                <span className="text-[0.8rem] font-bold text-sage bg-[rgba(122,158,135,0.1)] px-2.5 py-1 rounded-full border border-[rgba(122,158,135,0.25)]">
+                <span className="font-body text-[1.1rem] font-medium text-text-light/80 line-through">₹{product.oldPrice.toLocaleString('en-IN')}</span>
+                <span className="font-body text-[0.8rem] font-bold text-sage bg-[rgba(90,109,93,0.1)] px-2.5 py-1 rounded-full border border-[rgba(90,109,93,0.25)]">
                   Save {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
                 </span>
               </>
@@ -235,7 +235,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
       {/* Mobile Sticky Add to Cart */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-canvas/90 backdrop-blur-xl border-t border-border-brand p-4 px-5 flex items-center justify-between z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] pb-safe">
-        <div className="font-head text-[1.4rem] font-bold text-ink">₹{(product.price * quantity).toLocaleString('en-IN')}</div>
+        <div className="font-body text-[1.4rem] font-extrabold text-ink tracking-tight">₹{(product.price * quantity).toLocaleString('en-IN')}</div>
         <button
           onClick={handleAddToCart}
           className="bg-clay-deep text-white px-8 py-3 rounded-lg font-bold text-[0.9rem] shadow-s2 active:scale-95 transition-transform"
