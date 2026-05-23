@@ -12,9 +12,9 @@ interface MobileDrawerProps {
 
 const links = [
   { href: '/', label: '🏠 Home' },
-  { href: '/', label: '👗 Girls' },
-  { href: '/', label: '👘 Boys' },
-  { href: '/', label: '✨ Collections' },
+  { href: '/shop/girls', label: '👗 Girls' },
+  { href: '/shop/boys', label: '👘 Boys' },
+  { href: '/collections', label: '✨ Collections' },
   { href: '/wishlist', label: '❤️ Wishlist' },
   { href: '/contact', label: '📞 Contact' },
   { href: '/about', label: 'ℹ️ About Us' },

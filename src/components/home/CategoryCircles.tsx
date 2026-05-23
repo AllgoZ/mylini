@@ -22,7 +22,7 @@ export function CategoryCircles() {
     <div className="w-full px-4 md:px-7 mt-10">
       <div className="flex items-baseline justify-between mb-5">
         <h2 className="font-head text-[1.5rem] font-bold text-ink tracking-[-0.02em]">Shop By Category</h2>
-        <Link href="/" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
+        <Link href="/collections" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
           See all <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
         </Link>
       </div>
@@ -36,7 +36,7 @@ export function CategoryCircles() {
         {categories.map((cat, i) => (
           <Link
             key={i}
-            href="/"
+            href={`/shop/${cat.label.toLowerCase().replace(/\s+/g, '-')}`}
             className="group flex flex-col items-center gap-3 shrink-0"
           >
             <div

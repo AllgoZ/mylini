@@ -36,7 +36,7 @@ export default function Home() {
       <section className="w-full px-4 md:px-7 mt-10">
         <div className="flex items-baseline justify-between mb-5">
           <h2 className="font-head text-[1.5rem] font-bold text-ink tracking-[-0.02em]">Best Sellers</h2>
-          <Link href="/" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
+          <Link href="/collections" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
             View all <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
@@ -56,7 +56,7 @@ export default function Home() {
       {/* Editorial Promos */}
       <section className="w-full px-4 md:px-7 mt-14">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link href="/" className="group relative rounded-xl overflow-hidden min-h-[220px] flex items-center transition-all duration-[--t] ease-[--spring] hover:scale-[1.015] hover:shadow-s4">
+          <Link href="/shop/pattupavadai" className="group relative rounded-xl overflow-hidden min-h-[220px] flex items-center transition-all duration-[--t] ease-[--spring] hover:scale-[1.015] hover:shadow-s4">
             <Image src="/products/cat_ban/Peach_dress_-_desktop_version.webp" alt="Pattupavadai Collection" fill className="object-cover transition-transform duration-[0.8s] group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
             <div className="relative z-10 p-7 md:p-8">
@@ -70,7 +70,7 @@ export default function Home() {
               </div>
             </div>
           </Link>
-          <Link href="/" className="group relative rounded-xl overflow-hidden min-h-[220px] flex items-center transition-all duration-[--t] ease-[--spring] hover:scale-[1.015] hover:shadow-s4">
+          <Link href="/shop/pattufrock" className="group relative rounded-xl overflow-hidden min-h-[220px] flex items-center transition-all duration-[--t] ease-[--spring] hover:scale-[1.015] hover:shadow-s4">
             <Image src="/products/cat_ban/Top_and_Skirt-_Desktop_Version.webp" alt="Pattufrock Collection" fill className="object-cover transition-transform duration-[0.8s] group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
             <div className="relative z-10 p-7 md:p-8">
@@ -91,7 +91,7 @@ export default function Home() {
       <section className="w-full px-4 md:px-7 mt-14">
         <div className="flex items-baseline justify-between mb-5">
           <h2 className="font-head text-[1.5rem] font-bold text-ink tracking-[-0.02em]">New Arrivals</h2>
-          <Link href="/" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
+          <Link href="/collections" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
             View all <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
