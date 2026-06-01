@@ -16,9 +16,9 @@
 
 MYLINI v2 is a premium Indian children's ethnic wear e-commerce platform.
 
-**Tech stack:** Next.js (App Router) · TypeScript · Supabase (PostgreSQL) · Zod v4 · Zustand · Tailwind CSS · shadcn/ui
+**Tech stack:** Next.js 16 (App Router) · TypeScript · Supabase (PostgreSQL) · Zod v4 · Zustand · Tailwind CSS · shadcn/ui
 
-**Supabase project:** `jxazdoawlghbfzdmwwmu.supabase.co`
+**Supabase project:** `jxazdoawlghbfzdmwwmu.supabase.co` (LIVE)
 
 ---
 
@@ -29,7 +29,12 @@ MYLINI v2 is a premium Indian children's ethnic wear e-commerce platform.
 | Phase 1 — Frontend UI | ✅ Done |
 | Phase 2 — Backend Foundation | ✅ Done |
 | Phase 2.1 — DB Deployment & Verification | ✅ Done |
+| Phase 2.2 — Audit & Hardening | ✅ Done |
 | Phase 3 — Authentication | 🔲 Next |
+| Phase 4 — Payments (Razorpay) | 🔲 Planned |
+| Phase 5 — CMS (Sanity) | 🔲 Planned |
+| Phase 6 — Email (Resend) | 🔲 Planned |
+| Phase 7 — Image Storage (R2) | 🔲 Planned |
 
 ---
 
@@ -42,7 +47,7 @@ API Route → Zod validation → Service → Repository → Supabase
 - **Repositories** (`src/lib/repositories/`) — ONLY place that calls Supabase
 - **Services** (`src/lib/services/`) — business logic, calls repositories
 - **API Routes** (`src/app/api/`) — validate input, call services, return `ApiResponse<T>`
-- **Validations** (`src/lib/validations/`) — Zod schemas per domain
+- **Validations** (`src/lib/validations/`) — Zod schemas per domain (one file per domain)
 
 ---
 
@@ -59,19 +64,20 @@ API Route → Zod validation → Service → Repository → Supabase
 ## TypeScript / Zod Notes
 
 - **Zod v4** — use `.issues` (not `.errors`, which was removed in v4)
-- **database.types.ts** — currently hand-crafted; replace with `npx supabase gen types typescript --project-id jxazdoawlghbfzdmwwmu > src/lib/db/generated/database.types.ts` after DB setup
-- **`as any` casts in repositories** — intentional; disappear after type generation
+- **database.types.ts** — REAL generated types (1042 lines from live DB). Regenerate with:
+  `npx supabase gen types typescript --project-id jxazdoawlghbfzdmwwmu > src/lib/db/generated/database.types.ts`
 - **Next.js 16 dynamic params** — `params` is a `Promise`; must `await params` before using
 
 ---
 
 ## Database Status
 
-- 22 migrations ready: `src/lib/db/migrations/000–021`
-- **NOT YET APPLIED** to Supabase
-- Migration guide: `scripts/deploy-migrations.md`
-- Verification SQL: `scripts/verify-database.sql`
-- Seed data: `scripts/seed.sql`
+- **23 migrations deployed** (000–022) to live Supabase project ✅
+- **Types generated** from live schema — `src/lib/db/generated/database.types.ts` ✅
+- **Seed data inserted** — 4 products, 8 variants, inventory ✅
+- **RLS disabled** via migration 022 (Phase 2 pre-auth); Phase 3 adds proper policies
+- Migration source: `src/lib/db/migrations/`
+- CLI-formatted copies: `supabase/migrations/`
 
 ---
 
@@ -79,13 +85,15 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ✅ `npm run dev` — dev server starts  
 ✅ `npm run build` — 0 TypeScript errors  
-✅ All API routes structured and validated  
-✅ All repositories query correct tables  
-✅ Frontend UI renders (mock data)  
+✅ `GET /api/products` — returns real Supabase data  
+✅ All 6 API routes structured, validated, and connected to DB  
+✅ All 7 repositories query live database  
+✅ Frontend UI renders (still mock data — wired in Phase 3)
 
-❌ API calls fail (no database connection)  
-❌ Cart/wishlist API not connected to DB  
-❌ Auth not wired (Phase 3)  
+❌ Supabase Auth — not wired (Phase 3)  
+❌ Cart/orders require user_id — no auth yet  
+❌ Frontend pages use mock data (`src/data/mockProducts.ts`)  
+❌ No RLS policies — Phase 3
 
 ---
 
@@ -96,11 +104,9 @@ API Route → Zod validation → Service → Repository → Supabase
 | Full project overview | `architectureFiles/walkthrough.md` |
 | Last session summary | `architectureFiles/handover.md` |
 | Detailed file inventory | `architectureFiles/systemstatus.md` |
-| Frontend structure | `architectureFiles/fontend.md` |
-| Migration audit | `architectureFiles/migration-audit.md` |
-| API contracts | `architectureFiles/api-contracts.md` |
-| Readiness report | `architectureFiles/phase21-readiness-report.md` |
-| Phase 2 plan | `prompts/Plans/backend_foundation_plan.md` |
+| API endpoint contracts | `architectureFiles/api-contracts.md` |
+| Migration schema audit | `architectureFiles/migration-audit.md` |
+| Phase 2.2 audit reports | `architectureFiles/reports/01` through `10` |
 | Phase 3 guide | `prompts/nextsteps/NextStep.md` |
 
 ---
@@ -109,29 +115,36 @@ API Route → Zod validation → Service → Repository → Supabase
 
 1. Add Zod schema in `src/lib/validations/`
 2. Add repository method in `src/lib/repositories/` (only Supabase calls here)
-3. Add service method in `src/lib/services/` (business logic)
+3. Add service method in `src/lib/services/` (business logic, no Supabase)
 4. Add API route in `src/app/api/`
-5. Run `npx tsc --noEmit` (must stay at 0 errors)
+5. Run `npx tsc --noEmit` — must stay at 0 errors
 
 ---
 
 ## Known Technical Debt
 
-- `orderService.ts` — no PostgreSQL transaction (Phase 3)
-- `orderService.ts` — direct Supabase query for snapshots (should use ProductRepository)
-- `api/categories/route.ts` — calls repository directly, no service (minor)
-- `api/wishlist/route.ts` — inline Zod schema (should import from validations/)
-- Frontend pages — still using mock data from `src/data/mockProducts.ts`
-- No RLS policies yet — Phase 3
+- `orderService.ts` — no PostgreSQL transaction wrapping multi-step order creation (Phase 3)
+- `src/lib/db/migrations/022` — RLS disabled; Phase 3 replaces with per-user policies
+- Frontend pages — still using mock data from `src/data/mockProducts.ts` (wire in Phase 3)
 
 ---
 
 ## Environment Variables
 
-```
+```env
 NEXT_PUBLIC_SUPABASE_URL=https://jxazdoawlghbfzdmwwmu.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_mZEvGayJmorigrGhcrIYzA_eGfL3QVo
-SUPABASE_SERVICE_ROLE_KEY=  ← fill from Supabase Dashboard → Settings → API
+SUPABASE_SERVICE_ROLE_KEY=<in .env.local — never commit>
 ```
 
-All others (R2, Sanity, Resend, Razorpay) are optional until their respective phases.
+All others (R2, Sanity, Resend, Razorpay) are stubs — optional until their respective phases.
+
+---
+
+## Supabase CLI
+
+Project is linked. To re-deploy or push new migrations:
+
+```bash
+SUPABASE_ACCESS_TOKEN="sbp_..." npx supabase db push --linked
+```
