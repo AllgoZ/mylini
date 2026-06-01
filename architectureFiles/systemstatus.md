@@ -14,6 +14,7 @@
 | Phase 2 — Backend Foundation | ✅ Complete |
 | Phase 2.1 — DB Deployment Prep | ✅ Complete |
 | Phase 2.2 — Audit & Hardening | ✅ Complete |
+| Phase 2.3 — Live API Validation | ✅ Complete |
 | Phase 3 — Authentication | 🔲 Next |
 
 ---

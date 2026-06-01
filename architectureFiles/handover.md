@@ -14,6 +14,7 @@
 | Phase 2 | ✅ Done | Backend foundation — DB schema, repos, services, API |
 | Phase 2.1 | ✅ Done | DB deployment prep — scripts, env config, seed data |
 | Phase 2.2 | ✅ Done | Audit & hardening — architecture violations fixed |
+| Phase 2.3 | ✅ Done | Live API validation — all endpoints tested against live DB |
 | Phase 3 | 🔲 Next | Authentication — Supabase Auth, login/signup |
 
 ---
