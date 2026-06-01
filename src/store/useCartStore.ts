@@ -1,15 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { LocalCartItem } from '@/types/cart';
 
-export interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  oldPrice?: number;
-  image: string;
-  size: string;
-  quantity: number;
-}
+// CartItem is the local Zustand shape — for DB-backed cart use CartWithItems from types/cart.ts
+export type CartItem = LocalCartItem;
 
 interface CartState {
   items: CartItem[];

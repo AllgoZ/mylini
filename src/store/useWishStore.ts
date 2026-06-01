@@ -1,18 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { ProductSummary } from '@/types/product';
 
-export interface ProductSummary {
-  id: string;
-  name: string;
-  price: number;
-  oldPrice?: number;
-  image: string;
-  images?: string[];
-  isNew?: boolean;
-  discountBadge?: string;
-  rating?: number;
-  reviews?: number;
-}
+export type { ProductSummary };
 
 interface WishState {
   items: ProductSummary[];
