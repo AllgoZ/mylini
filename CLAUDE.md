@@ -30,7 +30,9 @@ MYLINI v2 is a premium Indian children's ethnic wear e-commerce platform.
 | Phase 2 — Backend Foundation | ✅ Done |
 | Phase 2.1 — DB Deployment & Verification | ✅ Done |
 | Phase 2.2 — Audit & Hardening | ✅ Done |
-| Phase 3 — Authentication | 🔲 Next |
+| Phase 3A — Phone-identity Auth (MVP) | ✅ Done |
+| Phase 3B — Wishlist Enhancements | 🔲 Next |
+| Phase 3.1 — OTP Verification | 🔲 Planned |
 | Phase 4 — Payments (Razorpay) | 🔲 Planned |
 | Phase 5 — CMS (Sanity) | 🔲 Planned |
 | Phase 6 — Email (Resend) | 🔲 Planned |
@@ -72,10 +74,11 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## Database Status
 
-- **23 migrations deployed** (000–022) to live Supabase project ✅
+- **24 migrations deployed** (000–023) to live Supabase project ✅
 - **Types generated** from live schema — `src/lib/db/generated/database.types.ts` ✅
-- **Seed data inserted** — 4 products, 8 variants, inventory ✅
-- **RLS disabled** via migration 022 (Phase 2 pre-auth); Phase 3 adds proper policies
+- **Seed data inserted** — 4 products, 8 variants, inventory, 3+ test users ✅
+- **RLS disabled** via migration 022 (all tables except sessions); sessions table RLS disabled in migration 023
+- **Permissions granted** — anon/authenticated roles have GRANT ALL on sessions table
 - Migration source: `src/lib/db/migrations/`
 - CLI-formatted copies: `supabase/migrations/`
 
@@ -85,15 +88,21 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ✅ `npm run dev` — dev server starts  
 ✅ `npm run build` — 0 TypeScript errors  
+✅ `POST /api/auth/login` — phone-based user creation + session  
+✅ `POST /api/auth/logout` — session revocation  
+✅ `GET /api/auth/me` — session validation + user return (or null)  
 ✅ `GET /api/products` — returns real Supabase data  
-✅ All 6 API routes structured, validated, and connected to DB  
-✅ All 7 repositories query live database  
-✅ Frontend UI renders (still mock data — wired in Phase 3)
+✅ `GET /api/wishlist` — requires valid session, returns user's wishlist  
+✅ `POST /api/orders` — requires valid session, creates order for authenticated user  
+✅ All 10 API routes structured, validated, connected to DB  
+✅ All 8 repositories query live database  
+✅ Session table + phone-primary user identity (migration 023)  
+✅ Frontend UI renders (still mock data — wired in Phase 3B)
 
-❌ Supabase Auth — not wired (Phase 3)  
-❌ Cart/orders require user_id — no auth yet  
+❌ Cart/checkout page — requires frontend auth wiring  
 ❌ Frontend pages use mock data (`src/data/mockProducts.ts`)  
-❌ No RLS policies — Phase 3
+❌ OTP verification — Phase 3.1  
+❌ RLS policies — Phase 3.2
 
 ---
 
