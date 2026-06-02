@@ -737,6 +737,44 @@ export type Database = {
         }
         Relationships: []
       }
+      sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: unknown
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown
+          session_token?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           role_id: string
@@ -771,28 +809,37 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
-          email: string
+          email: string | null
           id: string
+          last_login_at: string | null
           name: string | null
           phone: string | null
+          phone_verified: boolean | null
+          phone_verified_method: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           deleted_at?: string | null
-          email: string
+          email?: string | null
           id?: string
+          last_login_at?: string | null
           name?: string | null
           phone?: string | null
+          phone_verified?: boolean | null
+          phone_verified_method?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           deleted_at?: string | null
-          email?: string
+          email?: string | null
           id?: string
+          last_login_at?: string | null
           name?: string | null
           phone?: string | null
+          phone_verified?: boolean | null
+          phone_verified_method?: string | null
           updated_at?: string
         }
         Relationships: []

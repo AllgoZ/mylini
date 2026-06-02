@@ -51,4 +51,44 @@ export const CartService = {
     await CartRepository.removeItem(cart.id, variantId)
     return CartRepository.getWithItems(cart.id)
   },
+
+  async mergeGuestCartToUser(guestSessionId: string, userId: string): Promise<CartWithItems> {
+    // Get guest cart
+    const guestCart = await CartRepository.findOrCreateBySession(guestSessionId)
+    const guestWithItems = await CartRepository.getWithItems(guestCart.id)
+
+    // Get or create user cart
+    const userCart = await CartRepository.findByUserId(userId) ||
+      await CartRepository.findOrCreateBySession(userId) // Fallback: create temp, will be replaced
+
+    // For each item in guest cart
+    for (const item of guestWithItems.items) {
+      // Check inventory
+      const inventory = await InventoryRepository.findByVariantId(item.variant_id)
+      if (inventory.stock_available < item.quantity) {
+        // Skip items that exceed stock (partial merge)
+        continue
+      }
+
+      // Try to find existing item in user cart
+      const userWithItems = await CartRepository.getWithItems(userCart.id)
+      const existingUserItem = userWithItems.items.find((i) => i.variant_id === item.variant_id)
+
+      if (existingUserItem) {
+        // Merge quantities
+        const mergedQty = existingUserItem.quantity + item.quantity
+        if (inventory.stock_available >= mergedQty) {
+          await CartRepository.updateItem(userCart.id, item.variant_id, mergedQty)
+        }
+      } else {
+        // Add new item to user cart
+        await CartRepository.addItem(userCart.id, item.variant_id, item.quantity)
+      }
+    }
+
+    // Clear guest cart
+    await CartRepository.clearCart(guestCart.id)
+
+    return CartRepository.getWithItems(userCart.id)
+  },
 }

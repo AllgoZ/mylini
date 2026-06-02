@@ -1,12 +1,19 @@
 import { WishlistService } from '@/lib/services/wishlistService'
 import { wishlistToggleSchema } from '@/lib/validations/wishlistSchema'
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
+import { validateSessionMiddleware } from '@/lib/middleware/sessionMiddleware'
+import { AppError } from '@/lib/utils/errors'
 
 export async function POST(request: Request) {
   try {
+    const session = await validateSessionMiddleware(request)
+    if (!session) {
+      throw new AppError('Unauthorized', 401, 'SESSION_INVALID')
+    }
+
     const body = await request.json()
-    const { user_id, product_id } = wishlistToggleSchema.parse(body)
-    const result = await WishlistService.toggle(user_id, product_id)
+    const { product_id } = wishlistToggleSchema.parse(body)
+    const result = await WishlistService.toggle(session.user.id, product_id)
     return successResponse(result, 201)
   } catch (error) {
     return errorResponse(error)
@@ -15,11 +22,12 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const user_id = searchParams.get('user_id')
-    if (!user_id) return errorResponse(new Error('user_id is required'))
+    const session = await validateSessionMiddleware(request)
+    if (!session) {
+      throw new AppError('Unauthorized', 401, 'SESSION_INVALID')
+    }
 
-    const items = await WishlistService.getItems(user_id)
+    const items = await WishlistService.getItems(session.user.id)
     return successResponse(items)
   } catch (error) {
     return errorResponse(error)

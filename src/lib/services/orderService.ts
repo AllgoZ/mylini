@@ -5,7 +5,7 @@ import { CouponService } from './couponService'
 import { CouponRepository } from '@/lib/repositories/couponRepository'
 import { ProductRepository } from '@/lib/repositories/productRepository'
 import { ValidationError } from '@/lib/utils/errors'
-import type { CreateOrderInput, Order } from '@/types/order'
+import type { CreateOrderInput, Order, OrderSummary } from '@/types/order'
 import type { VariantSnapshot } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
 
@@ -97,5 +97,9 @@ export const OrderService = {
     }
 
     return order
+  },
+
+  async getByUserId(userId: string): Promise<OrderSummary[]> {
+    return OrderRepository.findByUserId(userId)
   },
 }
