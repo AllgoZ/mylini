@@ -7,7 +7,7 @@ import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AdminTopBar } from '@/components/admin/AdminTopBar'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthStore()
+  const hydrate = useAuthStore((s) => s.hydrate)
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -17,41 +17,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isLoginPage = pathname === '/admin/login'
 
   useEffect(() => {
+    // Login page needs no verification — just render it
     if (isLoginPage) {
       setChecking(false)
       return
     }
 
-    if (loading) return
-
-    if (!user) {
-      router.replace('/admin/login')
-      return
-    }
-
+    // Directly verify admin session via API — no dependency on useAuthStore.loading
+    // (AuthProvider lives in the storefront layout, not here)
     fetch('/api/admin/stats', { credentials: 'include' })
       .then((r) => {
-        if (r.status === 403 || r.status === 401) {
-          router.replace('/admin/login')
-        } else {
+        if (r.ok) {
           setAdminVerified(true)
+          // Hydrate auth store so AdminTopBar can show user info
+          hydrate()
+        } else {
+          router.replace('/admin/login')
         }
       })
       .catch(() => router.replace('/admin/login'))
       .finally(() => setChecking(false))
-  }, [user, loading, router, isLoginPage])
+  }, [isLoginPage, router, hydrate])
 
-  // Login page renders without the admin shell
   if (isLoginPage) {
     return <>{children}</>
   }
 
-  if (loading || checking) {
+  if (checking) {
     return (
       <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[#C4654A]/30 border-t-[#C4654A] rounded-full animate-spin" />
-          <span className="text-[0.85rem] text-[#78716C] font-medium">Verifying access…</span>
+          <span className="text-[0.85rem] text-[#78716C] font-medium">Loading…</span>
         </div>
       </div>
     )

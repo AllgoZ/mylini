@@ -2,144 +2,157 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Shield, Phone } from 'lucide-react'
-import { useAuthStore } from '@/store/useAuthStore'
+import { Eye, EyeOff, Lock } from 'lucide-react'
 
 export default function AdminLoginPage() {
-  const { user, loading, hydrate, login } = useAuthStore()
   const router = useRouter()
-  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [accessDenied, setAccessDenied] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [checking, setChecking] = useState(true)
 
-  // On mount, hydrate auth store (get existing session)
+  // If already has a valid admin session, go straight to dashboard
   useEffect(() => {
-    hydrate()
-  }, [hydrate])
-
-  // If already logged in, check admin and redirect
-  useEffect(() => {
-    if (loading || !user) return
-
-    fetch('/api/admin/stats', { credentials: 'include' }).then((r) => {
-      if (r.ok) {
-        router.replace('/admin')
-      } else {
-        setAccessDenied(true)
-      }
-    })
-  }, [user, loading, router])
+    fetch('/api/admin/stats', { credentials: 'include' })
+      .then((r) => { if (r.ok) router.replace('/admin') })
+      .finally(() => setChecking(false))
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    if (!/^\d{10}$/.test(phone)) {
-      setError('Enter a valid 10-digit phone number')
+    if (!email || !password) {
+      setError('Please enter both email and password.')
       return
     }
 
-    setSubmitting(true)
+    setLoading(true)
     try {
-      await login(phone)
-      // login() updates user in store; the useEffect above will then redirect
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        setError(json.error ?? 'Login failed. Check your credentials.')
+        return
+      }
+
+      router.replace('/admin')
     } catch {
-      setError('Login failed. Please try again.')
+      setError('Something went wrong. Please try again.')
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
-  if (accessDenied) {
+  if (checking) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center px-4">
-        <div className="bg-white rounded-3xl border border-[#E7E5E4] shadow-[0_8px_40px_rgba(0,0,0,0.08)] p-8 w-full max-w-sm text-center">
-          <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <Shield size={24} className="text-red-500" />
-          </div>
-          <h2 className="font-head text-[1.3rem] font-bold text-[#1C1917] mb-2">Access Denied</h2>
-          <p className="text-[0.875rem] text-[#78716C] mb-6">
-            Your account does not have admin privileges. Contact the store owner to request access.
-          </p>
-          <a
-            href="/"
-            className="inline-block w-full py-3 bg-[#1C1917] text-white text-[0.875rem] font-bold rounded-xl hover:bg-[#292524] transition-colors"
-          >
-            Return to Storefront
-          </a>
-        </div>
+      <div className="min-h-screen bg-[#F4F6F8] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#C4654A]/30 border-t-[#C4654A] rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center px-4">
-      <div className="bg-white rounded-3xl border border-[#E7E5E4] shadow-[0_8px_40px_rgba(0,0,0,0.08)] p-8 w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-7">
-          <div className="font-head text-[1.8rem] font-bold text-[#1C1917] tracking-[-0.02em] mb-1">
-            My<span className="text-[#C4654A]">lini</span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 text-[0.72rem] font-bold tracking-[0.1em] uppercase text-[#78716C] bg-[#F5F5F4] border border-[#E7E5E4] px-2.5 py-1 rounded-full">
-            <Shield size={11} /> Admin Portal
-          </div>
+    <div className="min-h-screen bg-[#F4F6F8] flex flex-col items-center justify-center px-4 py-12">
+      {/* Logo */}
+      <div className="mb-8 text-center">
+        <div className="font-head text-[2rem] font-bold text-[#1C1917] tracking-[-0.02em]">
+          My<span className="text-[#C4654A]">lini</span>
+        </div>
+        <p className="text-[0.82rem] text-[#6B7280] mt-1 font-medium">Admin Portal</p>
+      </div>
+
+      {/* Login Card */}
+      <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_4px_24px_rgba(0,0,0,0.06)] w-full max-w-[440px] p-8">
+        <div className="mb-6">
+          <h1 className="text-[1.3rem] font-bold text-[#111827] mb-1">Sign in to your store</h1>
+          <p className="text-[0.875rem] text-[#6B7280]">Enter your admin credentials to continue</p>
         </div>
 
-        <h1 className="font-head text-[1.15rem] font-bold text-[#1C1917] mb-1 text-center">Sign in to Admin</h1>
-        <p className="text-[0.82rem] text-[#78716C] text-center mb-6">Enter your registered admin phone number</p>
-
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="text-[0.8rem] font-bold text-[#44403C] block mb-1.5">
-              Phone Number
-            </label>
-            <div className="flex items-center border border-[#E7E5E4] rounded-xl overflow-hidden focus-within:border-[#C4654A] focus-within:ring-2 focus-within:ring-[#C4654A]/10 transition-all bg-[#FAFAF9]">
-              <div className="px-3.5 py-3 text-[0.875rem] font-semibold text-[#78716C] border-r border-[#E7E5E4] bg-[#F5F5F4] select-none">
-                +91
-              </div>
-              <input
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value.replace(/\D/g, ''))
-                  setError(null)
-                }}
-                placeholder="10-digit mobile number"
-                className="flex-1 px-3.5 py-3 bg-transparent outline-none text-[0.875rem] text-[#1C1917] placeholder:text-[#A8A29E]"
-                autoFocus
-                disabled={submitting}
-              />
-            </div>
-            {error && (
-              <p className="text-red-500 text-[0.78rem] font-semibold mt-1.5">{error}</p>
-            )}
+          {/* Email */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[0.82rem] font-semibold text-[#374151]">Email address</label>
+            <input
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(null) }}
+              placeholder="admin@mylini.com"
+              className="w-full bg-white border border-[#D1D5DB] rounded-xl px-4 py-3 text-[0.875rem] text-[#111827] outline-none placeholder:text-[#9CA3AF] focus:border-[#C4654A] focus:ring-3 focus:ring-[#C4654A]/10 transition-all"
+              autoFocus
+              disabled={loading}
+            />
           </div>
 
+          {/* Password */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[0.82rem] font-semibold text-[#374151]">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(null) }}
+                placeholder="Enter your password"
+                className="w-full bg-white border border-[#D1D5DB] rounded-xl px-4 py-3 pr-11 text-[0.875rem] text-[#111827] outline-none placeholder:text-[#9CA3AF] focus:border-[#C4654A] focus:ring-3 focus:ring-[#C4654A]/10 transition-all"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors p-1"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <Lock size={15} className="text-red-500 shrink-0 mt-0.5" />
+              <p className="text-[0.82rem] text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Submit */}
           <button
             type="submit"
-            disabled={submitting || phone.length !== 10}
-            className="w-full py-3 bg-[#C4654A] text-white font-bold text-[0.875rem] rounded-xl hover:bg-[#A0523A] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(196,101,74,0.3)]"
+            disabled={loading || !email || !password}
+            className="w-full py-3 bg-[#C4654A] text-white text-[0.9rem] font-bold rounded-xl transition-all hover:bg-[#A0523A] disabled:opacity-50 disabled:cursor-not-allowed mt-1"
           >
-            {submitting ? (
+            {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Signing in…
               </span>
-            ) : (
-              'Sign In'
-            )}
+            ) : 'Log in'}
           </button>
         </form>
 
-        <div className="mt-6 pt-5 border-t border-[#F5F5F4] text-center">
-          <a href="/" className="text-[0.78rem] text-[#A8A29E] hover:text-[#78716C] transition-colors">
-            ← Back to Storefront
-          </a>
+        {/* Security note */}
+        <div className="mt-5 pt-5 border-t border-[#F3F4F6]">
+          <p className="text-[0.75rem] text-[#9CA3AF] text-center">
+            This is a protected admin area. Unauthorized access is prohibited.
+          </p>
         </div>
       </div>
+
+      {/* Back to storefront */}
+      <a href="/" className="mt-6 text-[0.82rem] text-[#6B7280] hover:text-[#374151] transition-colors">
+        ← Back to Mylini store
+      </a>
     </div>
   )
 }

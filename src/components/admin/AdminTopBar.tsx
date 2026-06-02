@@ -10,13 +10,16 @@ interface Props {
 }
 
 export function AdminTopBar({ onMenuClick, title }: Props) {
-  const { user, logout } = useAuthStore()
+  const { user } = useAuthStore()
   const router = useRouter()
 
   const handleLogout = async () => {
-    await logout()
-    router.replace('/')
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    router.replace('/admin/login')
   }
+
+  // Show email if available, otherwise phone, otherwise "Admin"
+  const displayName = user?.email ?? (user?.phone ? `+91 ${user.phone}` : 'Admin')
 
   return (
     <header className="h-[62px] bg-white border-b border-[#E7E5E4] flex items-center justify-between px-4 md:px-6 shrink-0">
@@ -38,13 +41,13 @@ export function AdminTopBar({ onMenuClick, title }: Props) {
             <User size={14} />
           </div>
           <span className="text-[0.82rem] font-semibold text-[#44403C] hidden sm:block">
-            +91 {user?.phone ?? '—'}
+            {displayName}
           </span>
         </div>
         <button
           onClick={handleLogout}
           className="p-2 rounded-lg text-[#78716C] hover:bg-[#FEF2F2] hover:text-red-600 transition-colors"
-          title="Logout"
+          title="Log out"
         >
           <LogOut size={18} />
         </button>
