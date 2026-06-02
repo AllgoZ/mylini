@@ -78,7 +78,7 @@ export function ProductForm({ productId }: Props) {
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
-  const [status, setStatus] = useState<'draft' | 'active' | 'archived'>('draft')
+  const [status, setStatus] = useState<'draft' | 'active' | 'archived'>('active')
   const [basePrice, setBasePrice] = useState('')
   const [salePrice, setSalePrice] = useState('')
   const [isFeatured, setIsFeatured] = useState(false)
@@ -386,10 +386,15 @@ export function ProductForm({ productId }: Props) {
             <SectionHeading>Organization</SectionHeading>
             <Field label="Status">
               <select className={INPUT} value={status} onChange={e => setStatus(e.target.value as any)}>
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
+                <option value="active">Active — visible on storefront</option>
+                <option value="draft">Draft — hidden from storefront</option>
+                <option value="archived">Archived — permanently hidden</option>
               </select>
+              {status === 'draft' && (
+                <p className="text-[0.75rem] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mt-1">
+                  This product is hidden from the storefront. Set to Active to publish it.
+                </p>
+              )}
             </Field>
             <Field label="Category" required>
               <select className={INPUT} value={categoryId} onChange={e => setCategoryId(e.target.value)}>
