@@ -1,59 +1,80 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { LocalCartItem } from '@/types/cart';
+'use client'
 
-// CartItem is the local Zustand shape — for DB-backed cart use CartWithItems from types/cart.ts
-export type CartItem = LocalCartItem;
+import { create } from 'zustand'
+import type { CartWithItems } from '@/types/cart'
+import { getCart, addToCart, updateCartItem, removeCartItem } from '@/lib/api/cart'
+import { getGuestSessionId } from '@/lib/utils/guestSession'
 
 interface CartState {
-  items: CartItem[];
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
-  removeItem: (id: string, size: string) => void;
-  updateQuantity: (id: string, size: string, quantity: number) => void;
-  clearCart: () => void;
-  getCartTotal: () => number;
-  getCartCount: () => number;
+  cart: CartWithItems | null
+  loading: boolean
+  error: string | null
+
+  fetchCart: () => Promise<void>
+  addItem: (variantId: string, quantity?: number) => Promise<void>
+  updateItem: (variantId: string, quantity: number) => Promise<void>
+  removeItem: (variantId: string) => Promise<void>
+  getItemCount: () => number
+  getSubtotal: () => number
 }
 
-export const useCartStore = create<CartState>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      addItem: (item) => {
-        set((state) => {
-          const existingItemIndex = state.items.findIndex(
-            (i) => i.id === item.id && i.size === item.size
-          );
-          if (existingItemIndex >= 0) {
-            const newItems = [...state.items];
-            newItems[existingItemIndex].quantity += item.quantity || 1;
-            return { items: newItems };
-          }
-          return { items: [...state.items, { ...item, quantity: item.quantity || 1 }] };
-        });
-      },
-      removeItem: (id, size) => {
-        set((state) => ({
-          items: state.items.filter((i) => !(i.id === id && i.size === size)),
-        }));
-      },
-      updateQuantity: (id, size, quantity) => {
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id && i.size === size ? { ...i, quantity: Math.max(1, quantity) } : i
-          ),
-        }));
-      },
-      clearCart: () => set({ items: [] }),
-      getCartTotal: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
-      },
-      getCartCount: () => {
-        return get().items.reduce((count, item) => count + item.quantity, 0);
-      },
-    }),
-    {
-      name: 'mylini-cart-storage',
+export const useCartStore = create<CartState>((set, get) => ({
+  cart: null,
+  loading: false,
+  error: null,
+
+  fetchCart: async () => {
+    set({ loading: true, error: null })
+    try {
+      const sessionId = getGuestSessionId()
+      const cart = await getCart(sessionId)
+      set({ cart, loading: false })
+    } catch (e) {
+      set({ loading: false, error: e instanceof Error ? e.message : 'Failed to load cart' })
     }
-  )
-);
+  },
+
+  addItem: async (variantId: string, quantity = 1) => {
+    set({ error: null })
+    try {
+      const sessionId = getGuestSessionId()
+      const cart = await addToCart(sessionId, variantId, quantity)
+      set({ cart })
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : 'Failed to add item' })
+      throw e
+    }
+  },
+
+  updateItem: async (variantId: string, quantity: number) => {
+    set({ error: null })
+    try {
+      const sessionId = getGuestSessionId()
+      const cart = await updateCartItem(sessionId, variantId, quantity)
+      set({ cart })
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : 'Failed to update item' })
+      throw e
+    }
+  },
+
+  removeItem: async (variantId: string) => {
+    set({ error: null })
+    try {
+      const sessionId = getGuestSessionId()
+      const cart = await removeCartItem(sessionId, variantId)
+      set({ cart })
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : 'Failed to remove item' })
+      throw e
+    }
+  },
+
+  getItemCount: () => {
+    return get().cart?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0
+  },
+
+  getSubtotal: () => {
+    return get().cart?.subtotal ?? 0
+  },
+}))

@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { PhoneModal } from "@/components/auth/PhoneModal";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -34,12 +36,15 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-body" suppressHydrationWarning>
-        <Navbar />
-        <main className="flex-1 flex flex-col bg-background text-foreground">
-          {children}
-        </main>
-        <Footer />
-        <Toaster />
+        <AuthProvider>
+          <Navbar />
+          <main className="flex-1 flex flex-col bg-background text-foreground">
+            {children}
+          </main>
+          <Footer />
+          <Toaster />
+          <PhoneModal />
+        </AuthProvider>
       </body>
     </html>
   );

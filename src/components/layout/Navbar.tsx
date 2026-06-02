@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Heart, ShoppingBag, User, Menu } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { MobileDrawer } from './MobileDrawer';
 import { cn } from '@/lib/utils';
 
@@ -11,16 +12,23 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const cartCount = useCartStore((state) => state.getCartCount());
+
+  const { fetchCart, getItemCount } = useCartStore();
+  const { user, isAuthenticated, openLoginModal } = useAuthStore();
+  const cartCount = useCartStore((s) => s.getItemCount());
 
   useEffect(() => {
     setIsMounted(true);
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
+    fetchCart();
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [fetchCart]);
+
+  const handleUserClick = () => {
+    if (isAuthenticated) return; // Link href="/account" handles navigation
+    openLoginModal();
+  };
 
   return (
     <>
@@ -48,8 +56,8 @@ export function Navbar() {
           {/* Nav Links */}
           <div className="hidden md:flex gap-6 ml-1">
             {[
-              { label: 'Girls', href: '/shop/girls' },
-              { label: 'Boys', href: '/shop/boys' },
+              { label: 'Girls', href: '/shop/girls-traditional' },
+              { label: 'Boys', href: '/shop/boys-traditional' },
               { label: 'Collections', href: '/collections' },
               { label: 'About Us', href: '/about' },
               { label: 'Contact', href: '/contact' },
@@ -67,21 +75,40 @@ export function Navbar() {
 
           {/* Icon Buttons */}
           <div className="flex items-center gap-1.5 ml-auto">
+            {/* Wishlist */}
             <Link href="/wishlist" className="relative w-10 h-10 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
               <Heart size={20} strokeWidth={1.8} />
             </Link>
+
+            {/* Cart with badge */}
             <Link href="/cart" className="relative w-10 h-10 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
               <ShoppingBag size={20} strokeWidth={1.8} />
               {isMounted && cartCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-clay text-white text-[0.6rem] font-extrabold flex items-center justify-center border-2 border-canvas">
-                  {cartCount}
+                  {cartCount > 9 ? '9+' : cartCount}
                 </span>
               )}
             </Link>
-            <Link href="/account" className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
-              <User size={20} strokeWidth={1.8} />
-            </Link>
-            
+
+            {/* User — account or login */}
+            {isMounted && isAuthenticated ? (
+              <Link
+                href="/account"
+                className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-clay-deep transition-all hover:bg-rose-pale"
+                title={user?.phone ?? 'Account'}
+              >
+                <User size={20} strokeWidth={1.8} />
+              </Link>
+            ) : (
+              <button
+                onClick={handleUserClick}
+                className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
+                title="Sign In"
+              >
+                <User size={20} strokeWidth={1.8} />
+              </button>
+            )}
+
             {/* Hamburger */}
             <button
               onClick={() => setIsDrawerOpen(true)}

@@ -45,6 +45,7 @@ export const WishlistRepository = {
         p.images?.find((i: any) => i.is_primary)?.public_url ?? p.images?.[0]?.public_url ?? ''
       return {
         id: p.id,
+        slug: p.slug,
         name: p.name,
         price: p.sale_price ?? p.base_price,
         oldPrice: p.sale_price ? p.base_price : undefined,

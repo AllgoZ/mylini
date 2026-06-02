@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, CreditCard, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
+import { cartItemPrice } from '@/types/cart';
 
 export default function CheckoutPage() {
-  const { items, getCartTotal, clearCart } = useCartStore();
-  const subtotal = getCartTotal();
+  const { cart, fetchCart, getSubtotal } = useCartStore();
+  const items = cart?.items ?? [];
+  useEffect(() => { fetchCart(); }, [fetchCart]);
+  const subtotal = getSubtotal();
   const shipping = subtotal > 4000 ? 0 : 150;
   const total = subtotal + shipping;
 
@@ -20,11 +23,10 @@ export default function CheckoutPage() {
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
-    // Simulate payment processing
+    // Payment integration comes in Phase 4 (Razorpay)
     setTimeout(() => {
       setIsProcessing(false);
       setIsSuccess(true);
-      clearCart();
     }, 2000);
   };
 
@@ -205,27 +207,32 @@ export default function CheckoutPage() {
             <div className="bg-surface-2 rounded-3xl border border-border p-6 shadow-s1">
               
               <div className="max-h-[300px] overflow-y-auto scrollbar-none pr-2 mb-6 flex flex-col gap-4 border-b border-border-soft pb-6">
-                {items.map((item) => (
-                  <div key={`${item.id}-${item.size}`} className="flex gap-4 items-center relative">
-                    <div className="relative w-16 h-16 bg-white rounded-lg overflow-hidden border border-border-soft shrink-0">
-                      {item.image ? (
-                        <Image src={item.image} alt={item.name} fill className="object-cover" sizes="64px" />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
-                      )}
-                      <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-ink text-white rounded-full flex items-center justify-center text-[0.6rem] font-bold z-10 border border-white">
-                        {item.quantity}
+                {items.map((item) => {
+                  const name = item.variant?.product?.name ?? 'Product';
+                  const size = item.variant?.size ?? item.variant?.color ?? '';
+                  const image = item.variant?.primary_image ?? null;
+                  return (
+                    <div key={item.variant_id} className="flex gap-4 items-center relative">
+                      <div className="relative w-16 h-16 bg-white rounded-lg overflow-hidden border border-border-soft shrink-0">
+                        {image ? (
+                          <Image src={image} alt={name} fill className="object-cover" sizes="64px" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
+                        )}
+                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-ink text-white rounded-full flex items-center justify-center text-[0.6rem] font-bold z-10 border border-white">
+                          {item.quantity}
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-[0.85rem] text-ink line-clamp-1">{name}</h4>
+                        {size && <p className="text-[0.75rem] text-text-light font-medium">{size}</p>}
+                      </div>
+                      <div className="font-bold text-[0.9rem] text-ink shrink-0">
+                        ₹{(cartItemPrice(item) * item.quantity).toLocaleString('en-IN')}
                       </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-[0.85rem] text-ink line-clamp-1">{item.name}</h4>
-                      <p className="text-[0.75rem] text-text-light font-medium">{item.size}</p>
-                    </div>
-                    <div className="font-bold text-[0.9rem] text-ink shrink-0">
-                      ₹{(item.price * item.quantity).toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="flex flex-col gap-3 text-[0.9rem] font-medium text-text-mid mb-6 pb-6 border-b border-border-soft">

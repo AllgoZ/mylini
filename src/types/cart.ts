@@ -1,5 +1,5 @@
 import type { Database } from '@/lib/db/generated/database.types'
-import type { ProductVariant, ProductImage } from './product'
+import type { ProductVariant } from './product'
 
 export type Cart = Database['public']['Tables']['carts']['Row']
 export type CartItemRow = Database['public']['Tables']['cart_items']['Row']
@@ -18,22 +18,13 @@ export type CartItem = CartItemRow & {
   }
 }
 
+// Effective price helper — mirrors CartRepository computation
+export function cartItemPrice(item: CartItem): number {
+  return item.variant.price_override ?? item.variant.product.sale_price ?? item.variant.product.base_price
+}
+
 export type CartWithItems = Cart & {
   items: CartItem[]
   subtotal: number
   item_count: number
-}
-
-// Shape used by Zustand cart store (local state)
-export type LocalCartItem = {
-  id: string
-  name: string
-  price: number
-  oldPrice?: number
-  image: string
-  size: string
-  color?: string
-  sku?: string
-  variantId?: string
-  quantity: number
 }

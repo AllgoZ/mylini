@@ -29,9 +29,10 @@ export type ProductListItem = Pick<
   category: Pick<Category, 'id' | 'name' | 'slug'>
 }
 
-// Lightweight shape used by Zustand wishlist store
+// Lightweight shape used by Zustand wishlist/cart stores and ProductCard
 export type ProductSummary = {
   id: string
+  slug: string
   name: string
   price: number
   oldPrice?: number
@@ -39,8 +40,6 @@ export type ProductSummary = {
   images?: string[]
   isNew?: boolean
   discountBadge?: string
-  rating?: number
-  reviews?: number
 }
 
 export type ProductFilters = {
