@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Plus, Search, RefreshCw, Pencil, Trash2 } from 'lucide-react'
 import { StatusBadge } from '@/components/admin/StatusBadge'
 import { adminListProducts, adminDeleteProduct } from '@/lib/api/admin/products'
-import { ProductDrawer } from '@/components/admin/ProductDrawer'
 import type { ProductListItem } from '@/types/product'
 import { toast } from 'sonner'
 
@@ -16,8 +15,6 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -53,12 +50,12 @@ export default function AdminProductsPage() {
           <h1 className="font-head text-[1.6rem] font-bold text-[#1C1917]">Products</h1>
           <p className="text-[0.85rem] text-[#78716C] mt-0.5">{count} product{count !== 1 ? 's' : ''} total</p>
         </div>
-        <button
-          onClick={() => { setEditingId(null); setDrawerOpen(true) }}
-          className="flex items-center gap-2 bg-[#C4654A] text-white px-4 py-2.5 rounded-xl text-[0.875rem] font-bold shadow-sm hover:bg-[#A0523A] transition-colors"
+        <Link
+          href="/admin/products/new"
+          className="flex items-center gap-2 bg-[#C4654A] text-white px-4 py-2.5 rounded-xl text-[0.875rem] font-bold shadow-sm hover:bg-[#A0523A] transition-all hover:-translate-y-0.5"
         >
           <Plus size={16} /> New Product
-        </button>
+        </Link>
       </div>
 
       {/* Filters */}
@@ -67,7 +64,7 @@ export default function AdminProductsPage() {
           <Search size={15} className="text-[#A8A29E] shrink-0" />
           <input
             type="text"
-            placeholder="Search products..."
+            placeholder="Search products…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="flex-1 bg-transparent outline-none text-[0.875rem] text-[#1C1917] placeholder:text-[#A8A29E]"
@@ -98,7 +95,14 @@ export default function AdminProductsPage() {
           <div className="py-20 text-center">
             <div className="text-[3rem] mb-3">📦</div>
             <p className="font-semibold text-[#44403C] mb-1">No products found</p>
-            <p className="text-[0.85rem] text-[#78716C]">Create your first product to get started.</p>
+            <p className="text-[0.85rem] text-[#78716C] mb-5">
+              {search || statusFilter ? 'Try adjusting your filters.' : 'Create your first product to get started.'}
+            </p>
+            {!search && !statusFilter && (
+              <Link href="/admin/products/new" className="inline-flex items-center gap-2 bg-[#C4654A] text-white px-5 py-2.5 rounded-xl text-[0.875rem] font-bold hover:bg-[#A0523A] transition-colors">
+                <Plus size={15} /> Create Product
+              </Link>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -123,7 +127,7 @@ export default function AdminProductsPage() {
                           )}
                         </div>
                         <div>
-                          <Link href={`/admin/products/${p.id}`} className="font-semibold text-[0.875rem] text-[#1C1917] hover:text-[#C4654A] transition-colors line-clamp-1">
+                          <Link href={`/admin/products/${p.id}/edit`} className="font-semibold text-[0.875rem] text-[#1C1917] hover:text-[#C4654A] transition-colors line-clamp-1">
                             {p.name}
                           </Link>
                           <p className="text-[0.75rem] text-[#A8A29E]">{p.slug}</p>
@@ -138,10 +142,10 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3.5"><StatusBadge status={p.status} type="product" /></td>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/admin/products/${p.id}`} className="p-1.5 rounded-lg hover:bg-[#EFF6FF] text-[#78716C] hover:text-blue-600 transition-colors" title="Edit">
+                        <Link href={`/admin/products/${p.id}/edit`} className="p-1.5 rounded-lg hover:bg-[#EFF6FF] text-[#78716C] hover:text-blue-600 transition-colors" title="Edit product">
                           <Pencil size={15} />
                         </Link>
-                        <button onClick={() => handleDelete(p.id, p.name)} className="p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#78716C] hover:text-red-600 transition-colors" title="Archive">
+                        <button onClick={() => handleDelete(p.id, p.name)} className="p-1.5 rounded-lg hover:bg-[#FEF2F2] text-[#78716C] hover:text-red-600 transition-colors" title="Archive product">
                           <Trash2 size={15} />
                         </button>
                       </div>
@@ -153,13 +157,6 @@ export default function AdminProductsPage() {
           </div>
         )}
       </div>
-
-      <ProductDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        productId={editingId}
-        onSaved={() => { setDrawerOpen(false); load() }}
-      />
     </div>
   )
 }
