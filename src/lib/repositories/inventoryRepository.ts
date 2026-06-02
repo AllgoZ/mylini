@@ -57,4 +57,63 @@ export const InventoryRepository = {
     } as any)
     if (error) throw new Error(error.message)
   },
+
+  async findAll(): Promise<AdminInventoryRow[]> {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('inventory')
+      .select(`
+        *,
+        variant:product_variants!inner(
+          id, sku, color, size, is_active, deleted_at,
+          product:products!inner(id, name, slug,
+            images:product_images(public_url, is_primary)
+          )
+        )
+      `)
+      .order('stock_available', { ascending: true })
+
+    if (error) throw new Error(error.message)
+
+    return (data ?? [])
+      .filter((row: any) => !row.variant.deleted_at)
+      .map((row: any) => ({
+        variant_id: row.variant_id,
+        stock_available: row.stock_available,
+        stock_reserved: row.stock_reserved,
+        low_stock_threshold: row.low_stock_threshold,
+        sku: row.variant.sku,
+        size: row.variant.size,
+        color: row.variant.color,
+        product_id: row.variant.product.id,
+        product_name: row.variant.product.name,
+        product_slug: row.variant.product.slug,
+        primary_image: row.variant.product.images?.find((i: any) => i.is_primary)?.public_url
+          ?? row.variant.product.images?.[0]?.public_url ?? null,
+      }))
+  },
+
+  async setStock(variantId: string, newStock: number): Promise<void> {
+    const supabase = await createClient()
+    const { error } = await (supabase as any)
+      .from('inventory')
+      .update({ stock_available: newStock })
+      .eq('variant_id', variantId)
+
+    if (error) throw new Error(error.message)
+  },
+}
+
+export type AdminInventoryRow = {
+  variant_id: string
+  stock_available: number
+  stock_reserved: number
+  low_stock_threshold: number
+  sku: string
+  size: string | null
+  color: string | null
+  product_id: string
+  product_name: string
+  product_slug: string
+  primary_image: string | null
 }

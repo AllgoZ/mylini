@@ -1,11 +1,11 @@
-import { OrderRepository } from '@/lib/repositories/orderRepository'
+import { OrderRepository, type AdminOrderRow } from '@/lib/repositories/orderRepository'
 import { InventoryRepository } from '@/lib/repositories/inventoryRepository'
 import { InventoryService } from './inventoryService'
 import { CouponService } from './couponService'
 import { CouponRepository } from '@/lib/repositories/couponRepository'
 import { ProductRepository } from '@/lib/repositories/productRepository'
 import { ValidationError } from '@/lib/utils/errors'
-import type { CreateOrderInput, Order, OrderSummary } from '@/types/order'
+import type { CreateOrderInput, Order, OrderSummary, OrderStatus, OrderWithItems } from '@/types/order'
 import type { VariantSnapshot } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
 
@@ -101,5 +101,17 @@ export const OrderService = {
 
   async getByUserId(userId: string): Promise<OrderSummary[]> {
     return OrderRepository.findByUserId(userId)
+  },
+
+  async getAll(filters: { status?: string; page?: number; limit?: number }): Promise<{ orders: AdminOrderRow[]; count: number }> {
+    return OrderRepository.findAll(filters)
+  },
+
+  async getById(id: string): Promise<OrderWithItems> {
+    return OrderRepository.findById(id)
+  },
+
+  async updateStatus(orderId: string, status: OrderStatus): Promise<Order> {
+    return OrderRepository.updateStatus(orderId, status)
   },
 }

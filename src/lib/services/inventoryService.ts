@@ -49,4 +49,10 @@ export const InventoryService = {
       'cancellation'
     )
   },
+
+  async adjustStock(variantId: string, newStock: number, reason: 'restock' | 'adjustment', adminUserId: string): Promise<void> {
+    const before = await InventoryRepository.findByVariantId(variantId)
+    await InventoryRepository.setStock(variantId, newStock)
+    await InventoryRepository.logChange(variantId, before.stock_available, newStock, reason, adminUserId)
+  },
 }

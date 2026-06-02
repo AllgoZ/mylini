@@ -1,6 +1,6 @@
 import { CouponRepository } from '@/lib/repositories/couponRepository'
 import { CouponError } from '@/lib/utils/errors'
-import type { AppliedCoupon, ValidateCouponInput } from '@/types/coupon'
+import type { AppliedCoupon, ValidateCouponInput, Coupon } from '@/types/coupon'
 
 export const CouponService = {
   async validate({ code, user_id, order_total }: ValidateCouponInput): Promise<AppliedCoupon> {
@@ -35,5 +35,29 @@ export const CouponService = {
       return Math.min((subtotal * coupon.value) / 100, subtotal)
     }
     return Math.min(coupon.value, subtotal)
+  },
+
+  async listAll(filters: { page?: number; limit?: number; search?: string }): Promise<{ coupons: Coupon[]; count: number }> {
+    return CouponRepository.findAll(filters)
+  },
+
+  async create(data: { code: string; type: 'percentage' | 'fixed'; value: number; minimum_order?: number; usage_limit?: number | null; expires_at?: string | null; is_active?: boolean }): Promise<Coupon> {
+    return CouponRepository.create({
+      code: data.code.toUpperCase(),
+      type: data.type,
+      value: data.value,
+      minimum_order: data.minimum_order ?? 0,
+      usage_limit: data.usage_limit ?? null,
+      expires_at: data.expires_at ?? null,
+      is_active: data.is_active ?? true,
+    })
+  },
+
+  async update(couponId: string, data: Partial<{ code: string; type: 'percentage' | 'fixed'; value: number; minimum_order: number; usage_limit: number | null; expires_at: string | null; is_active: boolean }>): Promise<Coupon> {
+    return CouponRepository.update(couponId, data)
+  },
+
+  async disable(couponId: string): Promise<void> {
+    return CouponRepository.disable(couponId)
   },
 }
