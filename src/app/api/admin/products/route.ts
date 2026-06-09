@@ -3,7 +3,7 @@ import { ProductService } from '@/lib/services/productService'
 import { createProductSchema } from '@/lib/validations/adminProductSchema'
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
 
-export const GET = requireAdmin(async (request) => {
+export const GET = requireAdmin(async (request, ctx) => {
   try {
     const { searchParams } = new URL(request.url)
     const filters = {
@@ -20,11 +20,11 @@ export const GET = requireAdmin(async (request) => {
   }
 })
 
-export const POST = requireAdmin(async (request) => {
+export const POST = requireAdmin(async (request, ctx) => {
   try {
     const body = await request.json()
     const data = createProductSchema.parse(body)
-    const product = await ProductService.create(data)
+    const product = await ProductService.create(data as any)
     return successResponse(product, 201)
   } catch (error) {
     return errorResponse(error)

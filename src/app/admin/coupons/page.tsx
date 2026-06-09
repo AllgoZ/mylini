@@ -49,7 +49,7 @@ export default function AdminCouponsPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-head text-[1.6rem] font-bold text-[#1C1917]">Coupons</h1>
+          <h1 className="font-body text-[1.5rem] font-bold text-[#1C1917] tracking-tight">Coupons</h1>
           <p className="text-[0.85rem] text-[#78716C] mt-0.5">{count} coupon{count !== 1 ? 's' : ''}</p>
         </div>
         <div className="flex gap-2">

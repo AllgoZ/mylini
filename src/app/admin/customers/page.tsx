@@ -31,7 +31,7 @@ export default function AdminCustomersPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-head text-[1.6rem] font-bold text-[#1C1917]">Customers</h1>
+          <h1 className="font-body text-[1.5rem] font-bold text-[#1C1917] tracking-tight">Customers</h1>
           <p className="text-[0.85rem] text-[#78716C] mt-0.5">{count} registered customer{count !== 1 ? 's' : ''}</p>
         </div>
         <button onClick={load} className="p-2.5 rounded-xl border border-[#E7E5E4] bg-white text-[#78716C] hover:bg-[#F5F5F4] shadow-sm transition-colors">

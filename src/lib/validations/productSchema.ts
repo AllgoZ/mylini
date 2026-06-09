@@ -10,6 +10,12 @@ export const productQuerySchema = z.object({
   sort: z.enum(['price_asc', 'price_desc', 'newest', 'popular']).optional().default('newest'),
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  // Storefront filter params
+  size: z.string().optional(),
+  price_min: z.coerce.number().min(0).optional(),
+  price_max: z.coerce.number().min(0).optional(),
+  product_type: z.string().optional(),
+  tag: z.string().optional(),
 })
 
 export type ProductQueryInput = z.infer<typeof productQuerySchema>

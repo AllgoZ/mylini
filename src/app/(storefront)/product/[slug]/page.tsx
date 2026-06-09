@@ -1,7 +1,7 @@
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 import { notFound } from 'next/navigation';
-import { getProductBySlug } from '@/lib/api/products';
+import { ProductService } from '@/lib/services/productService';
 import { ProductDetailClient } from './ProductDetailClient';
 
 export default async function ProductPage({
@@ -13,7 +13,7 @@ export default async function ProductPage({
 
   let product;
   try {
-    product = await getProductBySlug(slug);
+    product = await ProductService.getBySlug(slug);
   } catch {
     notFound();
   }

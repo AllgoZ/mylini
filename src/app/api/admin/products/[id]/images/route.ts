@@ -3,7 +3,7 @@ import { ProductService } from '@/lib/services/productService'
 import { addImageSchema } from '@/lib/validations/adminProductSchema'
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
 
-export const POST = requireAdmin(async (request) => {
+export const POST = requireAdmin(async (request, ctx) => {
   try {
     const parts = request.url.split('/')
     const id = parts[parts.indexOf('products') + 1]

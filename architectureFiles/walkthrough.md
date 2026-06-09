@@ -1,6 +1,6 @@
 # MYLINI v2 — Project Walkthrough
-**Last Updated:** 2026-06-01  
-**Phase Completed:** Phase 2.1 (Database Deployment & Verification)
+**Last Updated:** 2026-06-08  
+**Phase Completed:** Phase 5 (Performance Optimization)
 
 ---
 
@@ -23,11 +23,15 @@ MYLINI v2 is a **premium Indian children's ethnic wear e-commerce platform** bui
 | Phase 1 | ✅ Done | Frontend UI — 19 pages, 9 components, Zustand stores |
 | Phase 2 | ✅ Done | Backend Foundation — DB schema, repos, services, API |
 | Phase 2.1 | ✅ Done | DB Deployment & Verification — scripts, audits, seed data |
-| Phase 3 | 🔲 Next | Authentication — Supabase Auth, login/signup |
-| Phase 4 | 🔲 Planned | Payments — Razorpay integration |
-| Phase 5 | 🔲 Planned | CMS — Sanity for blog/landing pages |
-| Phase 6 | 🔲 Planned | Email — Resend transactional email |
-| Phase 7 | 🔲 Planned | Image Storage — Cloudflare R2 uploads |
+| Phase 2.2 | ✅ Done | Audit & Hardening — architecture violations fixed |
+| Phase 2.3 | ✅ Done | Live API Validation — all endpoints tested |
+| Phase 3A | ✅ Done | Phone-Identity Auth — login/session/middleware |
+| Phase 3+4 | ✅ Done | CMS + Admin Platform — Homepage sections + full product mgmt |
+| Phase 5 | ✅ Done | Performance Optimization — ISR caching, SQL aggregates, 20-30% faster |
+| Phase 3B | 🔲 Next | Wishlist Enhancements — user persistence, cart merge, RLS |
+| Phase 6 | 🔲 Planned | Payments — Razorpay integration |
+| Phase 7 | 🔲 Planned | Email — Resend transactional email |
+| Phase 8 | 🔲 Planned | Image Storage — Cloudflare R2 uploads |
 
 ---
 

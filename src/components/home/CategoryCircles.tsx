@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 import { getCategories } from '@/lib/api/categories';
+import { HomepageService } from '@/lib/services/homepageService';
 
 const FALLBACK_EMOJI: Record<string, string> = {
   traditional: '🏵️',
@@ -24,11 +25,42 @@ const DEFAULT_GRADIENTS = [
 ];
 const DEFAULT_EMOJIS = ['🏵️', '👗', '👘', '🌸', '✨', '🎀'];
 
-export async function CategoryCircles() {
-  const categories = await getCategories().catch(() => []);
+type DisplayItem = {
+  key: string
+  name: string
+  href: string
+  image_url?: string | null
+  slug?: string
+}
 
-  // Show leaf categories (children) first, then root categories if no children exist
-  const display = categories.flatMap((c) => (c.children?.length ? c.children : [c])).slice(0, 8);
+export async function CategoryCircles() {
+  const [categories, featuredSections] = await Promise.all([
+    getCategories().catch(() => []),
+    HomepageService.getByType('featured_category').catch(() => []),
+  ])
+
+  let display: DisplayItem[]
+
+  if (featuredSections.length > 0) {
+    // Use CMS-managed list
+    display = featuredSections.map(s => ({
+      key: s.id,
+      name: s.title ?? '',
+      href: s.link_url ?? '/shop',
+      image_url: s.image_url,
+      slug: s.link_url?.split('/').pop(),
+    }))
+  } else {
+    // Fall back to all categories from DB
+    const leaves = categories.flatMap((c) => (c.children?.length ? c.children : [c])).slice(0, 8)
+    display = leaves.map(cat => ({
+      key: cat.id,
+      name: cat.name,
+      href: `/shop/${cat.slug}`,
+      image_url: (cat as any).image_url,
+      slug: cat.slug,
+    }))
+  }
 
   return (
     <div className="w-full px-4 md:px-7 mt-10">
@@ -40,14 +72,14 @@ export async function CategoryCircles() {
       </div>
 
       <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-none">
-        {display.map((cat, i) => {
-          const gradient = FALLBACK_GRADIENT[cat.slug] ?? DEFAULT_GRADIENTS[i % DEFAULT_GRADIENTS.length];
-          const emoji = FALLBACK_EMOJI[cat.slug] ?? DEFAULT_EMOJIS[i % DEFAULT_EMOJIS.length];
+        {display.map((item, i) => {
+          const gradient = FALLBACK_GRADIENT[item.slug ?? ''] ?? DEFAULT_GRADIENTS[i % DEFAULT_GRADIENTS.length];
+          const emoji = FALLBACK_EMOJI[item.slug ?? ''] ?? DEFAULT_EMOJIS[i % DEFAULT_EMOJIS.length];
 
           return (
             <Link
-              key={cat.id}
-              href={`/shop/${cat.slug}`}
+              key={item.key}
+              href={item.href}
               className="group flex flex-col items-center gap-3 shrink-0"
             >
               <div
@@ -58,12 +90,13 @@ export async function CategoryCircles() {
                 )}
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
-                {(cat as any).image_url ? (
+                {item.image_url ? (
                   <div className="relative w-full h-full">
                     <Image
-                      src={(cat as any).image_url}
-                      alt={cat.name}
+                      src={item.image_url}
+                      alt={item.name}
                       fill
+                      priority={i < 3}
                       className="object-cover transition-transform duration-[0.6s] ease-[--ease] group-hover:scale-110"
                       sizes="(max-width: 768px) 76px, 94px"
                     />
@@ -73,7 +106,7 @@ export async function CategoryCircles() {
                 )}
               </div>
               <div className="text-[0.72rem] md:text-[0.8rem] font-semibold text-center max-w-[80px] md:max-w-[94px] leading-tight text-text-mid group-hover:text-ink transition-colors">
-                {cat.name}
+                {item.name}
               </div>
             </Link>
           );

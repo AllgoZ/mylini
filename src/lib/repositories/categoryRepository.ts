@@ -9,26 +9,37 @@ export const CategoryRepository = {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('categories')
-      .select('*')
+      .select('id, name, slug, parent_id, is_active, sort_order')
       .is('deleted_at', null)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
     if (error) throw new Error(error.message)
-    return data
+    return data as unknown as Category[]
   },
 
   async findBySlug(slug: string): Promise<Category> {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('categories')
-      .select('*')
+      .select('id, name, slug, parent_id, is_active, sort_order')
       .eq('slug', slug)
       .is('deleted_at', null)
       .single()
 
     if (error || !data) throw new NotFoundError(`Category '${slug}'`)
-    return data
+    return data as unknown as Category
+  },
+
+  async create(name: string, slug: string, parentId?: string): Promise<Category> {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({ name, slug, is_active: true, sort_order: 0, ...(parentId ? { parent_id: parentId } : {}) } as any)
+      .select('id, name, slug, parent_id, is_active, sort_order')
+      .single()
+    if (error) throw new Error(error.message)
+    return data as unknown as Category
   },
 
   async findWithChildren(): Promise<CategoryTree[]> {

@@ -28,4 +28,9 @@ export type OrderSummary = Pick<
   'id' | 'status' | 'subtotal' | 'discount' | 'total' | 'created_at'
 > & {
   item_count: number
+  items_preview: { product_name_snapshot: string; image_snapshot: string | null }[]
+}
+
+export type AdminOrderSummary = Omit<OrderSummary, 'items_preview'> & {
+  items_preview?: { product_name_snapshot: string; image_snapshot: string | null }[]
 }

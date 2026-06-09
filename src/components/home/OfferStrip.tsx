@@ -33,14 +33,14 @@ export function OfferStrip() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.32, delay: 0.08, ease: 'easeOut' }}
-        className="flex flex-col md:flex-row gap-2 md:gap-3 min-w-max md:min-w-0 pb-1"
+        className="flex flex-row gap-2 md:gap-3 min-w-max pb-1"
       >
         {offers.map((offer, index) => {
           const Icon = offer.icon;
           return (
             <div
               key={index}
-              className="flex-1 flex items-center gap-2.5 bg-surface border border-border-soft rounded-md p-3 px-4.5 transition-all duration-[--t] ease-[--spring] hover:shadow-s2 hover:-translate-y-px"
+              className="flex-shrink-0 w-[calc(100vw-2rem)] md:flex-1 md:w-auto flex items-center gap-2.5 bg-surface border border-border-soft rounded-md p-3 px-4.5 transition-all duration-[--t] ease-[--spring] hover:shadow-s2 hover:-translate-y-px"
             >
               <div className="w-9 h-9 rounded-sm bg-rose-pale flex items-center justify-center shrink-0 text-clay-deep">
                 <Icon size={18} />

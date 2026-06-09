@@ -26,18 +26,23 @@ export async function validateSessionMiddleware(request: Request): Promise<Sessi
 
 export function requireSession(handler: (req: Request, ctx: SessionContext) => Promise<Response>) {
   return async (request: Request): Promise<Response> => {
-    const session = await validateSessionMiddleware(request)
+    try {
+      const session = await validateSessionMiddleware(request)
 
-    if (!session) {
+      if (!session) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized', code: 'SESSION_INVALID' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+
+      return await handler(request, session)
+    } catch (err: any) {
+      console.error('[requireSession] unhandled error:', err)
       return new Response(
-        JSON.stringify({ error: 'Unauthorized', code: 'SESSION_INVALID' }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: err?.message ?? 'Internal server error' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
-
-    return handler(request, session)
   }
 }

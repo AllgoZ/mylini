@@ -3,7 +3,7 @@ import { CouponService } from '@/lib/services/couponService'
 import { createCouponSchema } from '@/lib/validations/adminCouponSchema'
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
 
-export const GET = requireAdmin(async (request) => {
+export const GET = requireAdmin(async (request, ctx) => {
   try {
     const { searchParams } = new URL(request.url)
     const filters = {
@@ -18,7 +18,7 @@ export const GET = requireAdmin(async (request) => {
   }
 })
 
-export const POST = requireAdmin(async (request) => {
+export const POST = requireAdmin(async (request, ctx) => {
   try {
     const body = await request.json()
     const data = createCouponSchema.parse(body)

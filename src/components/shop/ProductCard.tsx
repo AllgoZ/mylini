@@ -9,12 +9,14 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { ProductSummary } from '@/types/product';
+import { getCardImageUrl } from '@/lib/utils/imageUrl';
 
 interface ProductCardProps {
   product: ProductSummary;
   gradient?: string;
   emoji?: string;
   delay?: number;
+  priority?: boolean;
 }
 
 export function ProductCard({
@@ -22,6 +24,7 @@ export function ProductCard({
   gradient = 'from-[#E8C9B8] to-[#B87050]',
   emoji = '👗',
   delay = 0,
+  priority = false,
 }: ProductCardProps) {
   const { hasItem, toggleItem } = useWishStore();
 
@@ -71,22 +74,24 @@ export function ProductCard({
             product.images.map((img, idx) => (
               <Image
                 key={img}
-                src={img}
+                src={getCardImageUrl(img)}
                 alt={`${product.name} ${idx + 1}`}
                 fill
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                priority={priority && idx === 0}
                 className={cn(
-                  'object-cover transition-opacity duration-700 ease-in-out',
+                  'object-cover transition-opacity duration-500 ease-in-out',
                   idx === currentImageIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 )}
               />
             ))
           ) : product.image ? (
             <Image
-              src={product.image}
+              src={getCardImageUrl(product.image)}
               alt={product.name}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              priority={priority}
               className="object-cover"
             />
           ) : (
@@ -137,7 +142,7 @@ export function ProductCard({
 
         <div className="flex-1 flex flex-col justify-between">
           <div className="p-3.5 pb-4">
-            <h3 className="text-[0.85rem] font-semibold text-text leading-[1.4] mb-1.5 line-clamp-2">
+            <h3 className="font-body text-[0.85rem] font-semibold text-text leading-[1.4] mb-1.5 line-clamp-2">
               {product.name}
             </h3>
             <div className="flex items-baseline gap-[7px] flex-wrap">

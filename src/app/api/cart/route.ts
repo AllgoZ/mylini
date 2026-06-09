@@ -44,6 +44,12 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const body = await request.json()
+    // If no variant_id — clear all items in the cart
+    if (!body.variant_id) {
+      const { session_id } = removeCartItemSchema.pick({ session_id: true }).parse(body)
+      await CartService.clear(session_id)
+      return successResponse(null)
+    }
     const { variant_id, session_id } = removeCartItemSchema.parse(body)
     const cart = await CartService.removeItem(session_id, variant_id)
     return successResponse(cart)

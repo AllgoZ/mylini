@@ -52,6 +52,11 @@ export const CartService = {
     return CartRepository.getWithItems(cart.id)
   },
 
+  async clear(sessionId: string): Promise<void> {
+    const cart = await CartRepository.findOrCreateBySession(sessionId)
+    await CartRepository.clearCart(cart.id)
+  },
+
   async mergeGuestCartToUser(guestSessionId: string, userId: string): Promise<CartWithItems> {
     // Get guest cart
     const guestCart = await CartRepository.findOrCreateBySession(guestSessionId)

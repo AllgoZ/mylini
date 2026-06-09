@@ -1,6 +1,7 @@
 import { apiFetch } from './index'
 import type { PaginatedProducts, ProductWithVariants } from '@/types/product'
 import type { CreateProductInput, UpdateProductInput, CreateVariantInput, UpdateVariantInput, AddImageInput } from '@/lib/validations/adminProductSchema'
+import type { UploadResult } from '@/lib/storage/types'
 
 export async function adminListProducts(filters: { search?: string; status?: string; category?: string; page?: number; limit?: number } = {}): Promise<PaginatedProducts> {
   const params = new URLSearchParams()
@@ -46,4 +47,28 @@ export async function adminUpdateImage(productId: string, imageId: string, data:
 
 export async function adminDeleteImage(productId: string, imageId: string): Promise<void> {
   await apiFetch(`/api/admin/products/${productId}/images/${imageId}`, { method: 'DELETE' })
+}
+
+export async function adminUploadImage(file: File, productId: string, type = 'gallery'): Promise<{ main: UploadResult; thumb: UploadResult }> {
+  const fd = new FormData()
+  fd.append('file', file)
+  fd.append('productId', productId)
+  fd.append('type', type)
+  return apiFetch('/api/admin/upload', { method: 'POST', body: fd })
+}
+
+export async function adminGetVariant(productId: string, variantId: string): Promise<any> {
+  return apiFetch(`/api/admin/products/${productId}/variants/${variantId}`)
+}
+
+export async function adminUpdateVariantFull(productId: string, variantId: string, data: Record<string, any>): Promise<void> {
+  await apiFetch(`/api/admin/products/${productId}/variants/${variantId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
+export async function adminReplaceAttributes(productId: string, attributes: { key: string; value: string }[]): Promise<void> {
+  await apiFetch(`/api/admin/products/${productId}/attributes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ attributes }) })
 }

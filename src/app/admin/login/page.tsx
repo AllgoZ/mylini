@@ -74,7 +74,7 @@ export default function AdminLoginPage() {
       {/* Login Card */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-[0_4px_24px_rgba(0,0,0,0.06)] w-full max-w-[440px] p-8">
         <div className="mb-6">
-          <h1 className="text-[1.3rem] font-bold text-[#111827] mb-1">Sign in to your store</h1>
+          <h1 className="font-body text-[1.25rem] font-bold text-[#111827] mb-1 tracking-tight">Sign in to your store</h1>
           <p className="text-[0.875rem] text-[#6B7280]">Enter your admin credentials to continue</p>
         </div>
 

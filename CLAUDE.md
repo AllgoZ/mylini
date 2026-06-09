@@ -31,10 +31,10 @@ MYLINI v2 is a premium Indian children's ethnic wear e-commerce platform.
 | Phase 2.1 — DB Deployment & Verification | ✅ Done |
 | Phase 2.2 — Audit & Hardening | ✅ Done |
 | Phase 3A — Phone-identity Auth (MVP) | ✅ Done |
+| Phase 4 — Professional Admin Platform | ✅ Done |
 | Phase 3B — Wishlist Enhancements | 🔲 Next |
 | Phase 3.1 — OTP Verification | 🔲 Planned |
-| Phase 4 — Payments (Razorpay) | 🔲 Planned |
-| Phase 5 — CMS (Sanity) | 🔲 Planned |
+| Phase 5 — Payments (Razorpay) | 🔲 Planned |
 | Phase 6 — Email (Resend) | 🔲 Planned |
 | Phase 7 — Image Storage (R2) | 🔲 Planned |
 
@@ -74,11 +74,13 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## Database Status
 
-- **24 migrations deployed** (000–023) to live Supabase project ✅
+- **25 migrations deployed** (000–024) to live Supabase project ✅
+  - Migration 025: Catalog write permissions for admin operations (INSERT, UPDATE, DELETE on products, variants, images, attributes, inventory)
 - **Types generated** from live schema — `src/lib/db/generated/database.types.ts` ✅
 - **Seed data inserted** — 4 products, 8 variants, inventory, 3+ test users ✅
-- **RLS disabled** via migration 022 (all tables except sessions); sessions table RLS disabled in migration 023
-- **Permissions granted** — anon/authenticated roles have GRANT ALL on sessions table
+- **RLS disabled** via migration 022 (all tables); sessions table RLS disabled in migration 023
+- **Admin role** seeded via migration 024 (`assign_admin_by_phone()` function)
+- **Permissions granted** — anon role has GRANT SELECT + INSERT/UPDATE/DELETE on catalog tables
 - Migration source: `src/lib/db/migrations/`
 - CLI-formatted copies: `supabase/migrations/`
 
@@ -86,23 +88,46 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## What Currently Works
 
+### Storefront
 ✅ `npm run dev` — dev server starts  
 ✅ `npm run build` — 0 TypeScript errors  
+✅ `GET /api/products` — returns real Supabase data (active status only)  
+✅ `GET /api/categories` — category tree with nesting  
 ✅ `POST /api/auth/login` — phone-based user creation + session  
 ✅ `POST /api/auth/logout` — session revocation  
-✅ `GET /api/auth/me` — session validation + user return (or null)  
-✅ `GET /api/products` — returns real Supabase data  
-✅ `GET /api/wishlist` — requires valid session, returns user's wishlist  
-✅ `POST /api/orders` — requires valid session, creates order for authenticated user  
-✅ All 10 API routes structured, validated, connected to DB  
-✅ All 8 repositories query live database  
-✅ Session table + phone-primary user identity (migration 023)  
-✅ Frontend UI renders (still mock data — wired in Phase 3B)
+✅ `GET /api/auth/me` — session validation  
+✅ `GET /api/wishlist` — user/session-based wishlist fetch  
+✅ `GET/POST/PATCH/DELETE /api/cart` — full cart CRUD  
+✅ `POST /api/orders` — complete order creation with snapshots  
+✅ Frontend UI renders with Navbar, Footer, ProductGrid, ProductDetail
+✅ Home page displays **Featured Collection** section showing all active products by default
 
-❌ Cart/checkout page — requires frontend auth wiring  
-❌ Frontend pages use mock data (`src/data/mockProducts.ts`)  
+### Admin Platform (Phase 4) ✅
+✅ `POST /api/admin/auth/login` — email + password login with role validation  
+✅ `GET /api/admin/stats` — dashboard metrics (revenue, orders, customers)  
+✅ `GET /api/admin/products` — product list with search/filter  
+✅ `POST /api/admin/products` — create product with variants + images (defaults to `status='active'`)  
+✅ `PATCH /api/admin/products/[id]` — update product details + status  
+✅ `DELETE /api/admin/products/[id]` — delete product  
+✅ `GET /api/admin/inventory` — inventory list  
+✅ `PATCH /api/admin/inventory/[variantId]` — adjust stock with audit logging  
+✅ `/admin/login` page — email + password form with role check  
+✅ `/admin` dashboard — 5 metrics + recent orders  
+✅ `/admin/products/new` — full-page create with pre-save variants/images  
+✅ `/admin/products/[id]/edit` — full-page edit with live variant/image management  
+✅ `/admin/inventory`, `/admin/orders`, `/admin/coupons`, `/admin/customers` — all working
+
+### Architecture
+✅ All 17+ API routes structured, validated, connected to DB  
+✅ 8 repositories query live database (no direct Supabase elsewhere)  
+✅ 8 services contain business logic  
+✅ Zod schemas in dedicated `src/lib/validations/` folder  
+✅ Session table + phone-primary user identity (migration 023)  
+✅ Admin role + requireAdmin() middleware (migration 024, Phase 4)
+
+✅ Frontend pages wired to real API (removed mock-only dependency)  
 ❌ OTP verification — Phase 3.1  
-❌ RLS policies — Phase 3.2
+❌ RLS policies — Phase 3B (will replace migration 022)
 
 ---
 
@@ -116,7 +141,7 @@ API Route → Zod validation → Service → Repository → Supabase
 | API endpoint contracts | `architectureFiles/api-contracts.md` |
 | Migration schema audit | `architectureFiles/migration-audit.md` |
 | Phase 2.2 audit reports | `architectureFiles/reports/01` through `10` |
-| Phase 3 guide | `prompts/nextsteps/NextStep.md` |
+| Phase 4 plan (completed) | `prompts/Plans/phase4_product_form_fixes.md` |
 
 ---
 
@@ -132,9 +157,22 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## Known Technical Debt
 
-- `orderService.ts` — no PostgreSQL transaction wrapping multi-step order creation (Phase 3)
-- `src/lib/db/migrations/022` — RLS disabled; Phase 3 replaces with per-user policies
-- Frontend pages — still using mock data from `src/data/mockProducts.ts` (wire in Phase 3)
+### Phase 4 Complete ✅
+- Admin layout isolation via route groups
+- Email + password admin login with role-based access
+- Full-page product create/edit (Shopify-style)
+- Migration 025 for catalog write permissions
+- All 4 product form bugs fixed (visual polish, toggle alignment, input contrast, single-save flow)
+
+### Product Query Resilience ✅ (Fixed)
+- Changed category joins from INNER to LEFT (products no longer disappear if category is deleted)
+- Added `categories.deleted_at IS NULL` filter (safety check)
+- Products now always visible on storefront (no silent failures)
+
+### Phase 3B (Next)
+- `orderService.ts` — no PostgreSQL transaction wrapping multi-step order creation
+- `src/lib/db/migrations/022` — RLS disabled; Phase 3B replaces with per-user policies
+- Frontend pages — still using mock data from `src/data/mockProducts.ts` (wire in Phase 3B)
 
 ---
 
@@ -144,9 +182,13 @@ API Route → Zod validation → Service → Repository → Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://jxazdoawlghbfzdmwwmu.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_mZEvGayJmorigrGhcrIYzA_eGfL3QVo
 SUPABASE_SERVICE_ROLE_KEY=<in .env.local — never commit>
+ADMIN_EMAIL=admin@mylini.com
+ADMIN_PASSWORD=Mylini@Admin2026
 ```
 
 All others (R2, Sanity, Resend, Razorpay) are stubs — optional until their respective phases.
+
+**Note:** Admin credentials set in Phase 4. User with admin email/password combo can access `/admin/login`.
 
 ---
 

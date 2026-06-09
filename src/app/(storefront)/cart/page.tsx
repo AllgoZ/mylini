@@ -137,8 +137,15 @@ export default function CartPage() {
                               <Plus size={14} />
                             </button>
                           </div>
-                          <div className="font-head text-[1.3rem] font-bold text-ink">
-                            ₹{(price * item.quantity).toLocaleString('en-IN')}
+                          <div className="text-right">
+                            <div className="font-body text-[1.2rem] font-extrabold text-ink tracking-tight leading-tight">
+                              ₹{(price * item.quantity).toLocaleString('en-IN')}
+                            </div>
+                            {item.quantity > 1 && (
+                              <div className="text-[0.72rem] text-text-light font-medium mt-0.5">
+                                ₹{price.toLocaleString('en-IN')} × {item.quantity}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -175,7 +182,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between items-end mb-8">
                   <span className="text-text font-bold text-[1.1rem]">Total</span>
-                  <span className="font-head text-[2rem] font-bold text-clay-deep leading-none">₹{total.toLocaleString('en-IN')}</span>
+                  <span className="font-body text-[1.75rem] font-extrabold text-clay-deep leading-none tracking-tight">₹{total.toLocaleString('en-IN')}</span>
                 </div>
 
                 <Link

@@ -55,7 +55,7 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
         </Link>
         <div className="flex-1">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h1 className="font-head text-[1.4rem] font-bold text-[#1C1917]">Order #{order.id.slice(0, 8).toUpperCase()}</h1>
+            <h1 className="font-body text-[1.35rem] font-bold text-[#1C1917] tracking-tight">Order #{order.id.slice(0, 8).toUpperCase()}</h1>
             <StatusBadge status={order.status} size="md" />
           </div>
           <p className="text-[0.82rem] text-[#78716C] mt-0.5">
@@ -112,6 +112,20 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
           ))}
         </div>
       </div>
+
+      {/* Delivery Address */}
+      {order.address && (
+        <div className="bg-white rounded-2xl border border-[#E7E5E4] p-5 shadow-sm mb-4">
+          <h2 className="font-semibold text-[#1C1917] mb-3">Delivery Address</h2>
+          <div className="text-[0.875rem] text-[#44403C] space-y-0.5">
+            <p className="font-bold text-[#1C1917]">{order.address.name}</p>
+            <p>{order.address.line1}</p>
+            {order.address.line2 && <p>{order.address.line2}</p>}
+            <p>{order.address.city}, {order.address.state} — {order.address.pincode}</p>
+            <p className="text-[#78716C]">{order.address.country}</p>
+          </div>
+        </div>
+      )}
 
       {/* Totals */}
       <div className="bg-white rounded-2xl border border-[#E7E5E4] p-5 shadow-sm">

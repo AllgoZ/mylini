@@ -32,7 +32,7 @@ export default function AdminDashboard() {
     <div className="max-w-7xl mx-auto">
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="font-head text-[1.6rem] font-bold text-[#1C1917]">Dashboard</h1>
+        <h1 className="font-body text-[1.5rem] font-bold text-[#1C1917] tracking-tight">Dashboard</h1>
         <p className="text-[0.85rem] text-[#78716C] mt-0.5">Welcome back. Here's what's happening today.</p>
       </div>
 

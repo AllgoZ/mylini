@@ -63,15 +63,17 @@ export const InventoryRepository = {
     const { data, error } = await supabase
       .from('inventory')
       .select(`
-        *,
+        variant_id, stock_available, stock_reserved, low_stock_threshold,
         variant:product_variants!inner(
-          id, sku, color, size, is_active, deleted_at,
+          id, sku, color, size, deleted_at,
           product:products!inner(id, name, slug,
-            images:product_images(public_url, is_primary)
+            primary_image:product_images(public_url)
           )
         )
       `)
       .order('stock_available', { ascending: true })
+      // Only return the primary image row from the join — avoids fetching all images client-side
+      .eq('product_variants.products.product_images.is_primary', true)
 
     if (error) throw new Error(error.message)
 
@@ -88,8 +90,7 @@ export const InventoryRepository = {
         product_id: row.variant.product.id,
         product_name: row.variant.product.name,
         product_slug: row.variant.product.slug,
-        primary_image: row.variant.product.images?.find((i: any) => i.is_primary)?.public_url
-          ?? row.variant.product.images?.[0]?.public_url ?? null,
+        primary_image: row.variant.product.primary_image?.[0]?.public_url ?? null,
       }))
   },
 
@@ -98,6 +99,16 @@ export const InventoryRepository = {
     const { error } = await (supabase as any)
       .from('inventory')
       .update({ stock_available: newStock })
+      .eq('variant_id', variantId)
+
+    if (error) throw new Error(error.message)
+  },
+
+  async updateSettings(variantId: string, settings: { inventory_tracked?: boolean; sell_when_out_of_stock?: boolean; low_stock_threshold?: number }): Promise<void> {
+    const supabase = await createClient()
+    const { error } = await (supabase as any)
+      .from('inventory')
+      .update({ ...settings, updated_at: new Date().toISOString() })
       .eq('variant_id', variantId)
 
     if (error) throw new Error(error.message)

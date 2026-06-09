@@ -19,11 +19,12 @@ Premium Indian children's ethnic wear e-commerce platform.
 | Phase 2 | ✅ Done | Backend foundation — DB schema, repos, services, API |
 | Phase 2.1 | ✅ Done | DB deployment — migrations applied, types generated |
 | Phase 2.2 | ✅ Done | Audit & hardening — architecture violations fixed |
-| Phase 3 | 🔲 Next | Authentication — Supabase Auth, login/signup |
-| Phase 4 | 🔲 Planned | Payments — Razorpay |
-| Phase 5 | 🔲 Planned | CMS — Sanity |
-| Phase 6 | 🔲 Planned | Email — Resend |
-| Phase 7 | 🔲 Planned | Image storage — Cloudflare R2 |
+| Phase 2.3 | ✅ Done | Live API validation — all endpoints tested |
+| Phase 3A | ✅ Done | Phone-identity auth — login/session/middleware |
+| Phase 3+4 | ✅ Done | CMS + Admin platform — Homepage sections + full product mgmt |
+| Phase 5 | ✅ Done | Performance optimization — ISR caching, SQL aggregates, 20-30% faster |
+| Phase 3B | 🔲 Next | Wishlist enhancements — user persistence, cart merge, RLS |
+| Phase 6+ | 🔲 Planned | Payments (Razorpay), Email (Resend), Image Storage (R2) |
 
 ## Getting Started
 
@@ -50,18 +51,23 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ### Database Setup
 
-The database is already deployed. To redeploy from scratch:
+The database is already deployed with **29 migrations** live on Supabase. To redeploy from scratch:
 
 ```bash
-# 1. Apply all 23 migrations (see scripts/deploy-migrations.md for step-by-step)
+# 1. Apply all 29 migrations (000–028, see scripts/deploy-migrations.md for step-by-step)
 # 2. Generate TypeScript types from the live schema
-npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/lib/db/generated/database.types.ts
+npx supabase gen types typescript --project-id jxazdoawlghbfzdmwwmu > src/lib/db/generated/database.types.ts
 
 # 3. Verify TypeScript is still clean
 npx tsc --noEmit
 
 # 4. Seed sample data (optional — see scripts/seed.sql)
 ```
+
+**Recent migrations:**
+- Migration 025: Admin catalog write permissions
+- Migration 026–028: Product schema extensions (dimensions, barcode, type, tags, tax)
+- Migration 029: Homepage CMS (banner, promo_blocks, featured_categories)
 
 ## Project Structure
 
@@ -89,14 +95,31 @@ scripts/
 
 ## API Endpoints
 
+### Storefront
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/products` | List products (filter, search, paginate) |
-| GET | `/api/products/[slug]` | Product detail with variants |
-| GET | `/api/categories` | Category tree |
-| GET/POST/PATCH/DELETE | `/api/cart` | Cart management |
-| GET/POST | `/api/wishlist` | Wishlist toggle |
-| POST | `/api/orders` | Create order |
+| GET | `/api/products` | List products (filter, search, paginate, ISR cached) |
+| GET | `/api/products/[slug]` | Product detail with variants (ISR cached) |
+| GET | `/api/categories` | Category tree with hierarchy |
+| GET | `/api/products/filters` | Filter metadata (sizes, types, tags, prices) |
+| GET/POST/PATCH/DELETE | `/api/cart` | Cart management (session-based) |
+| GET/POST | `/api/wishlist` | Wishlist toggle (user/session) |
+| POST | `/api/orders` | Create order with snapshots |
+
+### Admin (requires email+password login)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/admin/auth/login` | Admin authentication |
+| GET | `/api/admin/stats` | Dashboard metrics (SQL aggregates) |
+| GET/POST/PATCH/DELETE | `/api/admin/products/[id]` | Product management |
+| GET/POST | `/api/admin/products/[id]/variants` | Variant management |
+| GET/POST/DELETE | `/api/admin/products/[id]/images` | Image management |
+| GET/PATCH | `/api/admin/inventory/[variantId]` | Stock adjustment + audit log |
+| GET/POST/PATCH/DELETE | `/api/admin/orders/[id]` | Order management |
+| GET/POST/PATCH/DELETE | `/api/admin/coupons` | Coupon management |
+| GET | `/api/admin/customers` | Customer analytics |
+| POST | `/api/admin/content/*` | CMS content endpoints |
+| POST | `/api/admin/upload/cms` | CMS image upload |
 
 ## Environment Variables
 
@@ -132,8 +155,11 @@ Request → API Route → Zod validation → Service → Repository → Supabase
 All architecture docs are in `architectureFiles/`:
 
 - `walkthrough.md` — Full project overview
+- `systemstatus.md` — Detailed file inventory & phase progress
+- `handover.md` — Latest session summary (Phase 5 optimization)
+- `fontend.md` — Frontend architecture & components
+- `backend.md` — Backend structure & migrations
 - `api-contracts.md` — API endpoint contracts and test cases
-- `migration-audit.md` — Database schema audit
-- `reports/` — Phase 2.2 audit reports (10 files)
-- `handover.md` — Latest session summary
-- `systemstatus.md` — Detailed file inventory
+- `migration-audit.md` — Database schema audit (29 migrations)
+- `phase5-performance-optimizations.md` — Performance audit & fixes (20-30% faster)
+- `FIXES_APPLIED.md` — Product visibility fixes (Phase 4)

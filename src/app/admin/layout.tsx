@@ -57,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!adminVerified) return null
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] flex overflow-hidden">
+    <div className="admin-root min-h-screen bg-[#FAFAF9] flex overflow-hidden">
       <AdminSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <div className="flex-1 flex flex-col lg:ml-[240px] min-h-screen overflow-hidden">
         <AdminTopBar onMenuClick={() => setMobileOpen(true)} />

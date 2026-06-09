@@ -31,7 +31,7 @@ export function AdminTopBar({ onMenuClick, title }: Props) {
           <Menu size={20} />
         </button>
         {title && (
-          <h1 className="font-head text-[1.1rem] font-bold text-[#1C1917] hidden md:block">{title}</h1>
+          <h1 className="font-body text-[1.05rem] font-bold text-[#1C1917] hidden md:block tracking-tight">{title}</h1>
         )}
       </div>
 

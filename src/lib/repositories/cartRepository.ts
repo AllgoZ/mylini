@@ -45,22 +45,23 @@ export const CartRepository = {
 
   async getWithItems(cartId: string): Promise<CartWithItems> {
     const supabase = await createClient()
-    const { data: cart, error: cartError } = await supabase
+
+    // Single query: cart + nested items + variant info (was 2 sequential round-trips)
+    const { data: cart, error } = await supabase
       .from('carts')
-      .select('*')
+      .select(`
+        *,
+        cart_items(
+          ${ITEMS_SELECT}
+        )
+      `)
       .eq('id', cartId)
       .single()
 
-    if (cartError || !cart) throw new Error('Cart not found')
+    if (error || !cart) throw new Error('Cart not found')
 
-    const { data: items, error: itemsError } = await supabase
-      .from('cart_items')
-      .select(ITEMS_SELECT)
-      .eq('cart_id', cartId)
-
-    if (itemsError) throw new Error(itemsError.message)
-
-    const enrichedItems = (items ?? []).map((item: any) => ({
+    const rawItems: any[] = (cart as any).cart_items ?? []
+    const enrichedItems = rawItems.map((item: any) => ({
       ...item,
       variant: {
         ...item.variant,
@@ -75,8 +76,9 @@ export const CartRepository = {
       return sum + price * item.quantity
     }, 0)
 
+    const { cart_items: _dropped, ...cartFields } = cart as any
     return {
-      ...(cart as object),
+      ...cartFields,
       items: enrichedItems,
       subtotal,
       item_count: enrichedItems.reduce((n: number, i: any) => n + i.quantity, 0),

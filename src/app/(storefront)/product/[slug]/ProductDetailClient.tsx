@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { ShieldCheck, Truck, Undo2, Heart, Minus, Plus, Search } from 'lucide-react';
+import { ShieldCheck, Truck, Undo2, Heart, Minus, Plus, Search, Ruler, X as XIcon } from 'lucide-react';
 import type { ProductWithVariants } from '@/types/product';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishStore } from '@/store/useWishStore';
 import { adaptProductListItem } from '@/lib/utils/adapters';
+import { getDetailImageUrl, getThumbImageUrl } from '@/lib/utils/imageUrl';
 import { toast } from 'sonner';
 
 interface Props {
@@ -23,11 +23,14 @@ export function ProductDetailClient({ product }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [sizeChartOpen, setSizeChartOpen] = useState(false);
+
+  // Mobile swipe gallery ref
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
 
   const { addItem } = useCartStore();
   const { hasItem, toggleItem } = useWishStore();
 
-  // Build product summary for wishlist
   const productSummary = {
     id: product.id,
     slug: product.slug,
@@ -49,6 +52,21 @@ export function ProductDetailClient({ product }: Props) {
   const images = product.images.length > 0
     ? product.images.sort((a, b) => a.sort_order - b.sort_order)
     : [];
+
+  // Sync dot indicator with mobile scroll position
+  const handleMobileScroll = useCallback(() => {
+    const el = mobileScrollRef.current;
+    if (!el || el.clientWidth === 0) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    setActiveImage(idx);
+  }, []);
+
+  // Tap a desktop thumbnail → also scroll the mobile slider
+  const handleThumbnailClick = (idx: number) => {
+    setActiveImage(idx);
+    const el = mobileScrollRef.current;
+    if (el) el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
+  };
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
@@ -89,42 +107,109 @@ export function ProductDetailClient({ product }: Props) {
 
         {/* Gallery */}
         <div className="flex flex-col gap-3">
-          <motion.div
-            className="aspect-square rounded-3xl overflow-hidden bg-surface-2 flex items-center justify-center relative cursor-zoom-in hover:shadow-s4 transition-shadow"
-            onClick={() => setIsZoomed(!isZoomed)}
-          >
-            {images.length > 0 ? (
-              <Image
-                src={images[activeImage]?.public_url ?? images[0].public_url}
-                alt={`${product.name} image ${activeImage + 1}`}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-[#E8D8C0] to-[#B07840] flex items-center justify-center text-[8rem]">
-                👗
-              </div>
-            )}
-            <div className="absolute bottom-4 right-4 bg-ink/50 backdrop-blur-md text-white text-[0.72rem] px-3 py-1.5 rounded-full tracking-[0.04em] flex items-center gap-1.5 z-20 pointer-events-none">
-              <Search size={14} /> Zoom
-            </div>
-          </motion.div>
 
-          {images.length > 1 && (
-            <div className="flex gap-2.5 overflow-x-auto scrollbar-none pb-2">
-              {images.map((img, idx) => (
-                <button
-                  key={img.id}
-                  onClick={() => setActiveImage(idx)}
-                  className={`w-[72px] h-[72px] rounded-xl flex-shrink-0 relative border-2 transition-all duration-[--t] ease-[--spring] overflow-hidden ${activeImage === idx ? 'border-clay' : 'border-transparent hover:scale-105 hover:border-clay-soft'}`}
-                >
-                  <Image src={img.public_url} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" sizes="72px" />
-                </button>
-              ))}
+          {/* ── MOBILE swipe gallery (hidden on sm+) ───────────────────────────── */}
+          {images.length > 0 && (
+            <div className="sm:hidden relative rounded-3xl overflow-hidden bg-surface-2">
+              {/* Scroll container */}
+              <div
+                ref={mobileScrollRef}
+                onScroll={handleMobileScroll}
+                className="flex overflow-x-auto scrollbar-none snap-x snap-mandatory"
+                style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
+              >
+                {images.map((img, idx) => (
+                  <div
+                    key={img.id}
+                    className="snap-start shrink-0 w-full aspect-[3/4] relative bg-surface-2"
+                    style={{ scrollSnapAlign: 'start' }}
+                  >
+                    <Image
+                      src={getDetailImageUrl(img.public_url)}
+                      alt={`${product.name} — image ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="100vw"
+                      priority={idx === 0}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Dot indicators */}
+              {images.length > 1 && (
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
+                  {images.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-full bg-white transition-all duration-300 ${
+                        activeImage === idx ? 'w-5 h-[5px] opacity-100' : 'w-[5px] h-[5px] opacity-50'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Image count badge */}
+              {images.length > 1 && (
+                <div className="absolute top-3 right-3 bg-ink/50 backdrop-blur-md text-white text-[0.7rem] px-2.5 py-1 rounded-full font-semibold z-20 pointer-events-none">
+                  {activeImage + 1} / {images.length}
+                </div>
+              )}
             </div>
           )}
+
+          {/* ── DESKTOP gallery (hidden on mobile) ─────────────────────────────── */}
+          <div className="hidden sm:flex flex-row gap-3 items-start">
+            {/* Vertical thumbnail strip */}
+            {images.length > 1 && (
+              <div className="flex flex-col gap-2 overflow-y-auto max-h-[560px] flex-shrink-0 scrollbar-none pr-0.5">
+                {images.map((img, idx) => (
+                  <button
+                    key={img.id}
+                    onClick={() => handleThumbnailClick(idx)}
+                    className={`w-[76px] h-[96px] rounded-xl flex-shrink-0 relative border-2 transition-all duration-[--t] ease-[--spring] overflow-hidden ${
+                      activeImage === idx
+                        ? 'border-clay shadow-[0_0_0_1px_var(--color-clay)]'
+                        : 'border-transparent opacity-70 hover:opacity-100 hover:border-clay-soft'
+                    }`}
+                  >
+                    <Image
+                      src={getThumbImageUrl(img.public_url)}
+                      alt={`Thumbnail ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="76px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Main image */}
+            <div
+              className="flex-1 aspect-[3/4] rounded-3xl overflow-hidden bg-surface-2 flex items-center justify-center relative cursor-zoom-in hover:shadow-s4 transition-shadow"
+              onClick={() => setIsZoomed(!isZoomed)}
+            >
+              {images.length > 0 ? (
+                <Image
+                  src={getDetailImageUrl(images[activeImage]?.public_url ?? images[0].public_url)}
+                  alt={`${product.name} image ${activeImage + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[#E8D8C0] to-[#B07840] flex items-center justify-center text-[8rem]">
+                  👗
+                </div>
+              )}
+              <div className="absolute bottom-4 right-4 bg-ink/50 backdrop-blur-md text-white text-[0.72rem] px-3 py-1.5 rounded-full tracking-[0.04em] flex items-center gap-1.5 z-20 pointer-events-none">
+                <Search size={14} /> Zoom
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Details Panel */}
@@ -192,13 +277,22 @@ export function ProductDetailClient({ product }: Props) {
           {/* Variant / Size selection */}
           {product.variants.length > 0 && (
             <div className="mb-5">
-              <div className="flex justify-between text-[0.85rem] font-bold text-text mb-3">
+              <div className="flex justify-between items-center text-[0.85rem] font-bold text-text mb-3">
                 <span>
                   Size{' '}
                   {selectedVariant?.size && (
                     <strong className="text-clay-deep">— {selectedVariant.size}</strong>
                   )}
                 </span>
+                {(product as any).size_chart_url && (
+                  <button
+                    onClick={() => setSizeChartOpen(true)}
+                    className="flex items-center gap-1.5 text-[0.78rem] font-semibold text-clay hover:text-clay-deep transition-colors"
+                  >
+                    <Ruler size={14} />
+                    Size Chart
+                  </button>
+                )}
               </div>
               <div className="flex gap-2 flex-wrap">
                 {product.variants.map((v) => {
@@ -209,7 +303,11 @@ export function ProductDetailClient({ product }: Props) {
                       key={v.id}
                       onClick={() => setSelectedVariantId(v.id)}
                       disabled={!available}
-                      className={`px-5 py-2 rounded-md border-[1.5px] text-[0.85rem] font-semibold transition-all duration-[--t] disabled:opacity-40 disabled:cursor-not-allowed ${selectedVariantId === v.id ? 'bg-clay-deep border-clay-deep text-white' : 'border-border text-text-mid hover:border-clay-soft hover:text-clay'}`}
+                      className={`px-5 py-2 rounded-md border-[1.5px] text-[0.85rem] font-semibold transition-all duration-[--t] disabled:opacity-40 disabled:cursor-not-allowed ${
+                        selectedVariantId === v.id
+                          ? 'bg-clay-deep border-clay-deep text-white'
+                          : 'border-border text-text-mid hover:border-clay-soft hover:text-clay'
+                      }`}
                     >
                       {label}
                     </button>
@@ -259,8 +357,52 @@ export function ProductDetailClient({ product }: Props) {
             <div className="flex items-center gap-1.5"><Truck size={16} className="text-clay" /> Free ship &gt;₹4000</div>
             <div className="flex items-center gap-1.5"><Undo2 size={16} className="text-text-light" /> 30-day returns</div>
           </div>
+
+          {product.description && (
+            <div className="mt-6 border-t border-border-soft pt-6">
+              <h3 className="text-[0.75rem] font-bold text-ink mb-3 uppercase tracking-[0.06em]">Description</h3>
+              <div
+                className="text-[0.9rem] text-text-mid leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_h1]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_p]:mb-2"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Size Chart Overlay */}
+      {sizeChartOpen && (product as any).size_chart_url && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink/70 backdrop-blur-sm"
+          onClick={() => setSizeChartOpen(false)}
+        >
+          <div
+            className="relative bg-canvas rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.35)] max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border-soft">
+              <div className="flex items-center gap-2">
+                <Ruler size={16} className="text-clay" />
+                <span className="font-bold text-[0.95rem] text-ink">Size Chart</span>
+              </div>
+              <button
+                onClick={() => setSizeChartOpen(false)}
+                className="w-8 h-8 rounded-full bg-surface hover:bg-surface-2 flex items-center justify-center transition-colors"
+              >
+                <XIcon size={16} className="text-text-mid" />
+              </button>
+            </div>
+            <div className="overflow-auto p-4 flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={(product as any).size_chart_url}
+                alt="Size chart"
+                className="max-w-full rounded-xl object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Sticky CTA */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-canvas/90 backdrop-blur-xl border-t border-border-brand p-4 px-5 flex items-center justify-between z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">

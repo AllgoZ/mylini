@@ -78,7 +78,7 @@ export function Testimonials() {
                   {review.emoji}
                 </div>
                 <div>
-                  <h4 className="font-bold text-[0.9rem] text-ink">{review.name}</h4>
+                  <h4 className="font-body font-bold text-[0.9rem] text-ink">{review.name}</h4>
                   <div className="flex items-center gap-1 text-[0.75rem] font-bold text-sage">
                     <ShieldCheck size={14} /> Verified Buyer
                   </div>

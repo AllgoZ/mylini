@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/db/server'
-import type { User } from '@/types/user'
+import type { User, Address, CreateAddressInput } from '@/types/user'
 
 export type CustomerWithStats = User & {
   order_count: number
@@ -83,6 +83,28 @@ export const UserRepository = {
 
     if (error) return false
     return !!data
+  },
+
+  async createAddress(input: CreateAddressInput): Promise<Address> {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('addresses')
+      .insert({
+        user_id: input.user_id,
+        name: input.name,
+        line1: input.line1,
+        line2: input.line2 ?? null,
+        city: input.city,
+        state: input.state,
+        pincode: input.pincode,
+        country: input.country ?? 'India',
+        is_default: input.is_default ?? false,
+      })
+      .select()
+      .single()
+
+    if (error) throw new Error(error.message)
+    return data as unknown as Address
   },
 
   async findAll(filters: { search?: string; page?: number; limit?: number }): Promise<{ users: CustomerWithStats[]; count: number }> {

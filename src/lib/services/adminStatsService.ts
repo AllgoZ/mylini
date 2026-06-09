@@ -16,47 +16,25 @@ export const AdminStatsService = {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
-    const [ordersRes, ordersToday, customers, products, lowStock] = await Promise.all([
-      supabase
-        .from('orders')
-        .select('total, status, created_at')
-        .not('status', 'in', '(cancelled,refunded)'),
-
-      supabase
-        .from('orders')
-        .select('total', { count: 'exact' })
-        .gte('created_at', todayStart.toISOString())
-        .not('status', 'in', '(cancelled,refunded)'),
-
-      supabase
-        .from('users')
-        .select('id', { count: 'exact' })
-        .is('deleted_at', null),
-
-      supabase
-        .from('products')
-        .select('id', { count: 'exact' })
-        .eq('status', 'active')
-        .is('deleted_at', null),
-
-      supabase
-        .from('inventory')
-        .select('variant_id')
-        .filter('stock_available', 'lte', 'low_stock_threshold'),
+    // Use DB-level aggregates (PostgREST v12 aggregate syntax) — no full-table scan
+    const [revTotal, revToday, ordTotal, ordToday, customers, products, lowStock] = await Promise.all([
+      supabase.from('orders').select('total.sum()').not('status', 'in', '(cancelled,refunded)'),
+      supabase.from('orders').select('total.sum()').gte('created_at', todayStart.toISOString()).not('status', 'in', '(cancelled,refunded)'),
+      supabase.from('orders').select('*', { count: 'exact', head: true }).not('status', 'in', '(cancelled,refunded)'),
+      supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()).not('status', 'in', '(cancelled,refunded)'),
+      supabase.from('users').select('*', { count: 'exact', head: true }).is('deleted_at', null),
+      supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'active').is('deleted_at', null),
+      supabase.from('inventory').select('*', { count: 'exact', head: true }).filter('stock_available', 'lte', 'low_stock_threshold'),
     ])
 
-    const allOrders = ordersRes.data ?? []
-    const revenue_total = allOrders.reduce((sum, o) => sum + (o.total ?? 0), 0)
-    const revenue_today = (ordersToday.data ?? []).reduce((sum: number, o: any) => sum + (o.total ?? 0), 0)
-
     return {
-      revenue_total,
-      revenue_today,
-      orders_total: allOrders.length,
-      orders_today: ordersToday.count ?? 0,
+      revenue_total: Number((revTotal.data as any)?.[0]?.sum ?? 0),
+      revenue_today: Number((revToday.data as any)?.[0]?.sum ?? 0),
+      orders_total: ordTotal.count ?? 0,
+      orders_today: ordToday.count ?? 0,
       customers_total: customers.count ?? 0,
       products_total: products.count ?? 0,
-      low_stock_count: lowStock.data?.length ?? 0,
+      low_stock_count: lowStock.count ?? 0,
     }
   },
 }

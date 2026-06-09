@@ -39,7 +39,7 @@ export function StatsCard({ title, value, sub, icon: Icon, color = 'clay', loadi
           <Icon size={18} className={c.icon} strokeWidth={1.8} />
         </div>
       </div>
-      <div className="font-head text-[1.9rem] font-bold text-[#1C1917] leading-none mb-1">{value}</div>
+      <div className="font-body text-[1.85rem] font-bold text-[#1C1917] leading-none mb-1 tracking-tight tabular-nums">{value}</div>
       {sub && <div className="text-[0.78rem] text-[#A8A29E] font-medium">{sub}</div>}
     </div>
   )

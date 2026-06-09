@@ -82,6 +82,7 @@ export function ProductDrawer({ open, onClose, productId, onSaved }: Props) {
         sale_price: form.sale_price ? Number(form.sale_price) : null,
         is_featured: form.is_featured, is_best_seller: form.is_best_seller,
         is_new_arrival: form.is_new_arrival, status: form.status,
+        tags: [], charge_tax: true,
       }
       if (productId) {
         await adminUpdateProduct(productId, data)
@@ -107,6 +108,7 @@ export function ProductDrawer({ open, onClose, productId, onSaved }: Props) {
         color: newVariant.color || undefined,
         price_override: newVariant.price_override ? Number(newVariant.price_override) : undefined,
         is_active: true,
+        initial_stock: 0,
       })
       toast.success('Variant added')
       setNewVariant({ sku: '', size: '', color: '', price_override: '' })

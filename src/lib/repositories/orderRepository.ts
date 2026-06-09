@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/db/server'
 import { NotFoundError } from '@/lib/utils/errors'
-import type { Order, OrderWithItems, OrderStatus, OrderSummary } from '@/types/order'
+import type { Order, OrderWithItems, OrderStatus, OrderSummary, AdminOrderSummary } from '@/types/order'
 import type { Database } from '@/lib/db/generated/database.types'
 
-export type AdminOrderRow = OrderSummary & {
+export type AdminOrderRow = AdminOrderSummary & {
   user_id: string
   customer_phone: string | null
   customer_name: string | null
@@ -53,7 +53,7 @@ export const OrderRepository = {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, subtotal, discount, total, created_at, items:order_items(quantity)')
+      .select('id, status, subtotal, discount, total, created_at, items:order_items(quantity, product_name_snapshot, image_snapshot)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -67,6 +67,10 @@ export const OrderRepository = {
       total: o.total,
       created_at: o.created_at,
       item_count: (o.items ?? []).reduce((n: number, i: any) => n + i.quantity, 0),
+      items_preview: (o.items ?? []).slice(0, 3).map((i: any) => ({
+        product_name_snapshot: i.product_name_snapshot ?? '',
+        image_snapshot: i.image_snapshot ?? null,
+      })),
     }))
   },
 

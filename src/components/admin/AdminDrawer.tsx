@@ -46,7 +46,7 @@ export function AdminDrawer({ open, onClose, title, subtitle, children, width = 
             {/* Header */}
             <div className="flex items-start justify-between p-5 border-b border-[#E7E5E4] shrink-0">
               <div>
-                <h2 className="font-head text-[1.15rem] font-bold text-[#1C1917]">{title}</h2>
+                <h2 className="font-body text-[1.1rem] font-bold text-[#1C1917] tracking-tight">{title}</h2>
                 {subtitle && <p className="text-[0.82rem] text-[#78716C] mt-0.5">{subtitle}</p>}
               </div>
               <button onClick={onClose} className="p-1.5 rounded-lg text-[#78716C] hover:bg-[#F5F5F4] transition-colors mt-0.5">

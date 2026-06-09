@@ -13,8 +13,9 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const { product_id } = wishlistToggleSchema.parse(body)
-    const result = await WishlistService.toggle(session.user.id, product_id)
-    return successResponse(result, 201)
+    await WishlistService.toggle(session.user.id, product_id)
+    const items = await WishlistService.getItems(session.user.id)
+    return successResponse(items, 201)
   } catch (error) {
     return errorResponse(error)
   }

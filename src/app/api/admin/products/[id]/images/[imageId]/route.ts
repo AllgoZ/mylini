@@ -2,14 +2,11 @@ import { requireAdmin } from '@/lib/middleware/adminMiddleware'
 import { ProductService } from '@/lib/services/productService'
 import { updateImageSchema } from '@/lib/validations/adminProductSchema'
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
+import { extractParam } from '@/lib/utils/routeParams'
 
-function getImageId(url: string): string {
-  return url.split('/').pop()!
-}
-
-export const PATCH = requireAdmin(async (request) => {
+export const PATCH = requireAdmin(async (request, ctx) => {
   try {
-    const imageId = getImageId(request.url)
+    const imageId = extractParam(request.url, 'images')
     const body = await request.json()
     const data = updateImageSchema.parse(body)
     await ProductService.updateImage(imageId, data)
@@ -19,9 +16,9 @@ export const PATCH = requireAdmin(async (request) => {
   }
 })
 
-export const DELETE = requireAdmin(async (request) => {
+export const DELETE = requireAdmin(async (request, ctx) => {
   try {
-    const imageId = getImageId(request.url)
+    const imageId = extractParam(request.url, 'images')
     await ProductService.removeImage(imageId)
     return successResponse(null)
   } catch (error) {

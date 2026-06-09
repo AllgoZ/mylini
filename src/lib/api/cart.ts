@@ -45,3 +45,11 @@ export async function removeCartItem(
     body: JSON.stringify({ session_id: sessionId, variant_id: variantId }),
   })
 }
+
+export async function clearCart(sessionId: string): Promise<void> {
+  await apiFetch<null>('/api/cart', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId }),
+  })
+}

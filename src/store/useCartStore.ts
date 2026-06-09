@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import type { CartWithItems } from '@/types/cart'
-import { getCart, addToCart, updateCartItem, removeCartItem } from '@/lib/api/cart'
+import { getCart, addToCart, updateCartItem, removeCartItem, clearCart } from '@/lib/api/cart'
 import { getGuestSessionId } from '@/lib/utils/guestSession'
 
 interface CartState {
@@ -14,6 +14,7 @@ interface CartState {
   addItem: (variantId: string, quantity?: number) => Promise<void>
   updateItem: (variantId: string, quantity: number) => Promise<void>
   removeItem: (variantId: string) => Promise<void>
+  clearCart: () => Promise<void>
   getItemCount: () => number
   getSubtotal: () => number
 }
@@ -66,6 +67,18 @@ export const useCartStore = create<CartState>((set, get) => ({
       set({ cart })
     } catch (e) {
       set({ error: e instanceof Error ? e.message : 'Failed to remove item' })
+      throw e
+    }
+  },
+
+  clearCart: async () => {
+    set({ error: null })
+    try {
+      const sessionId = getGuestSessionId()
+      await clearCart(sessionId)
+      set({ cart: null })
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : 'Failed to clear cart' })
       throw e
     }
   },

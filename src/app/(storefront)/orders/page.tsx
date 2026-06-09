@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingBag, Package } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getOrders } from '@/lib/api/auth';
 import type { OrderSummary } from '@/types/order';
@@ -41,7 +42,7 @@ export default function OrdersPage() {
         <div className="w-full max-w-2xl mx-auto px-4">
           <div className="h-8 w-36 bg-surface-2 rounded animate-pulse mb-8" />
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-surface-2 rounded-2xl animate-pulse mb-4" />
+            <div key={i} className="h-32 bg-surface-2 rounded-2xl animate-pulse mb-4" />
           ))}
         </div>
       </div>
@@ -60,7 +61,7 @@ export default function OrdersPage() {
 
         {loading ? (
           <div className="flex flex-col gap-4">
-            {[1, 2].map((i) => <div key={i} className="h-24 bg-surface-2 rounded-2xl animate-pulse" />)}
+            {[1, 2].map((i) => <div key={i} className="h-32 bg-surface-2 rounded-2xl animate-pulse" />)}
           </div>
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-20 bg-white rounded-3xl border border-border-soft shadow-s1">
@@ -90,28 +91,54 @@ export default function OrdersPage() {
               return (
                 <div
                   key={order.id}
-                  className="bg-white rounded-2xl border border-border-soft shadow-s1 p-5 flex items-center justify-between gap-4"
+                  className="bg-white rounded-2xl border border-border-soft shadow-s1 p-5 flex flex-col gap-4"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-xl bg-surface-2 flex items-center justify-center text-text-light shrink-0">
-                      <Package size={20} strokeWidth={1.5} />
-                    </div>
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="font-bold text-ink text-[0.95rem] mb-0.5">
-                        Order #{orderId}
+                      <div className="font-bold text-ink text-[0.95rem] mb-0.5">Order #{orderId}</div>
+                      <div className="text-[0.78rem] text-text-light font-medium">{date} · {order.item_count} item{order.item_count !== 1 ? 's' : ''}</div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <span className={`text-[0.72rem] font-bold px-2.5 py-1 rounded-full ${status.color}`}>
+                        {status.label}
+                      </span>
+                      <div className="font-bold text-ink text-[0.9rem]">
+                        ₹{order.total.toLocaleString('en-IN')}
                       </div>
-                      <div className="text-[0.78rem] text-text-light font-medium">{date}</div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className={`text-[0.72rem] font-bold px-2.5 py-1 rounded-full ${status.color}`}>
-                      {status.label}
-                    </span>
-                    <div className="font-bold text-ink text-[0.9rem]">
-                      ₹{order.total.toLocaleString('en-IN')}
+                  {/* Item previews */}
+                  {order.items_preview.length > 0 && (
+                    <div className="flex gap-3 items-center">
+                      {order.items_preview.map((item, idx) => (
+                        <div key={idx} className="relative w-14 h-14 rounded-lg overflow-hidden border border-border-soft bg-surface shrink-0">
+                          {item.image_snapshot ? (
+                            <Image
+                              src={item.image_snapshot}
+                              alt={item.product_name_snapshot}
+                              fill
+                              className="object-cover"
+                              sizes="56px"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
+                          )}
+                        </div>
+                      ))}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[0.82rem] font-semibold text-ink line-clamp-1">
+                          {order.items_preview[0].product_name_snapshot}
+                        </p>
+                        {order.items_preview.length > 1 && (
+                          <p className="text-[0.75rem] text-text-light font-medium">
+                            +{order.item_count - 1} more item{order.item_count - 1 !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               );
             })}

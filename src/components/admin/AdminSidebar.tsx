@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X } from 'lucide-react'
+import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -12,6 +12,12 @@ const NAV = [
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag },
   { label: 'Customers', href: '/admin/customers', icon: Users },
+]
+
+const CONTENT_NAV = [
+  { label: 'Homepage Banner', href: '/admin/content/banner', icon: ImageIcon },
+  { label: 'Promo Blocks', href: '/admin/content/promo-blocks', icon: LayoutTemplate },
+  { label: 'Featured Categories', href: '/admin/content/featured-categories', icon: Star },
 ]
 
 interface Props {
@@ -67,6 +73,27 @@ export function AdminSidebar({ mobileOpen, onClose }: Props) {
                   )}
                 >
                   <Icon size={18} strokeWidth={isActive(href, exact) ? 2 : 1.8} />
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <div className="text-[0.65rem] font-bold tracking-[0.1em] uppercase text-white/30 px-3 mt-5 mb-2">Content</div>
+          <ul className="space-y-0.5">
+            {CONTENT_NAV.map(({ label, href, icon: Icon }) => (
+              <li key={href}>
+                <Link
+                  href={href}
+                  onClick={onClose}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.875rem] font-semibold transition-all duration-150',
+                    isActive(href)
+                      ? 'bg-white/10 text-white'
+                      : 'text-[#A8A29E] hover:bg-white/5 hover:text-white'
+                  )}
+                >
+                  <Icon size={18} strokeWidth={isActive(href) ? 2 : 1.8} />
                   {label}
                 </Link>
               </li>

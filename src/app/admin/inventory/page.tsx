@@ -52,7 +52,7 @@ export default function AdminInventoryPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-head text-[1.6rem] font-bold text-[#1C1917]">Inventory</h1>
+          <h1 className="font-body text-[1.5rem] font-bold text-[#1C1917] tracking-tight">Inventory</h1>
           <div className="flex items-center gap-4 mt-1">
             <span className="text-[0.82rem] text-[#78716C]">{rows.length} variants</span>
             {low > 0 && <span className="text-[0.82rem] font-bold text-amber-600">🟡 {low} low stock</span>}

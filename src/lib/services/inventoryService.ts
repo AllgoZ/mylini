@@ -55,4 +55,12 @@ export const InventoryService = {
     await InventoryRepository.setStock(variantId, newStock)
     await InventoryRepository.logChange(variantId, before.stock_available, newStock, reason, adminUserId)
   },
+
+  async updateSettings(variantId: string, settings: { inventory_tracked?: boolean; sell_when_out_of_stock?: boolean; low_stock_threshold?: number }): Promise<void> {
+    return InventoryRepository.updateSettings(variantId, settings)
+  },
+
+  async getByVariantId(variantId: string) {
+    return InventoryRepository.findByVariantId(variantId)
+  },
 }
