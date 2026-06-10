@@ -44,7 +44,7 @@ export const PATCH = requireAdmin(async (request, ctx) => {
     }
 
     if (new_stock !== undefined && reason !== undefined) {
-      await InventoryService.adjustStock(variantId, Number(new_stock), reason, ctx.user.id)
+      await InventoryService.adjustStock(variantId, Number(new_stock), reason, ctx.adminEmail)
     }
 
     return successResponse(null)
