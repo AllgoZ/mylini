@@ -178,17 +178,52 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## Environment Variables
 
+**IMPORTANT:** Set ALL these variables in Netlify Site Settings → Build & deploy → Environment for the demo to work.
+
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://jxazdoawlghbfzdmwwmu.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_mZEvGayJmorigrGhcrIYzA_eGfL3QVo
-SUPABASE_SERVICE_ROLE_KEY=<in .env.local — never commit>
+# Admin Credentials (server-side only, never exposed to browser)
 ADMIN_EMAIL=admin@mylini.com
-ADMIN_PASSWORD=Mylini@Admin2026
+ADMIN_PASSWORD=[SET_IN_NETLIFY]
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=[YOUR_SUPABASE_URL]
+NEXT_PUBLIC_SUPABASE_ANON_KEY=[YOUR_SUPABASE_ANON_KEY]
+SUPABASE_SERVICE_ROLE_KEY=[YOUR_SERVICE_ROLE_KEY]
+
+# Image Storage — active provider: "cloudinary" | "cloudflare"
+STORAGE_PROVIDER=cloudinary
+
+# Cloudinary (Phase 5+ — active)
+CLOUDINARY_CLOUD_NAME=[YOUR_CLOUDINARY_NAME]
+CLOUDINARY_API_KEY=[YOUR_API_KEY]
+CLOUDINARY_API_SECRET=[YOUR_API_SECRET]
+
+# Cloudflare R2 (future migration path)
+CLOUDFLARE_R2_ENDPOINT=
+CLOUDFLARE_R2_ACCESS_KEY=
+CLOUDFLARE_R2_SECRET_KEY=
+CLOUDFLARE_R2_BUCKET=
+
+# Sanity CMS (Phase 7+)
+SANITY_PROJECT_ID=
+SANITY_DATASET=production
+SANITY_API_TOKEN=
+
+# Resend Email (Phase 8+)
+RESEND_API_KEY=
+
+# Razorpay Payments (Phase 6+)
+NEXT_PUBLIC_RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
 ```
 
-All others (R2, Sanity, Resend, Razorpay) are stubs — optional until their respective phases.
+**Demo Deployment on Netlify:**
+1. Go to Site Settings → Build & deploy → Environment
+2. Add all variables above (set actual values from `.env.local`)
+3. Trigger redeploy: Deployments → Trigger deploy → Deploy site
+4. Login with your admin email and password
 
-**Note:** Admin credentials set in Phase 4. User with admin email/password combo can access `/admin/login`.
+**Note:** Never commit secrets to git. All credentials are set as Netlify environment variables. For production, use a secure secrets manager (HashiCorp Vault, AWS Secrets Manager, etc.).
 
 ---
 
