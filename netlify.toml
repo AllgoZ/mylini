@@ -2,5 +2,20 @@
   command = "npm run build"
   publish = ".next"
 
+# Omit documentation files and placeholder env examples from secrets scanning
+[[build.environment]]
+  key = "SECRETS_SCAN_OMIT_PATHS"
+  value = "CLAUDE.md,architectureFiles/**,prompts/**,scripts/**,.env.local.example,DEPLOY.md"
+
+[[build.environment]]
+  key = "SECRETS_SCAN_OMIT_KEYS"
+  value = "SANITY_DATASET,ADMIN_EMAIL,STORAGE_PROVIDER,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Cache headers for static assets
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
