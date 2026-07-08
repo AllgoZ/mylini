@@ -32,11 +32,13 @@ MYLINI v2 is a premium Indian children's ethnic wear e-commerce platform.
 | Phase 2.2 — Audit & Hardening | ✅ Done |
 | Phase 3A — Phone-identity Auth (MVP) | ✅ Done |
 | Phase 4 — Professional Admin Platform | ✅ Done |
+| Phase 5 — Performance Optimization | ✅ Done |
+| Phase 5.1 — Admin Auth Hardening | ✅ Done |
 | Phase 3B — Wishlist Enhancements | 🔲 Next |
 | Phase 3.1 — OTP Verification | 🔲 Planned |
-| Phase 5 — Payments (Razorpay) | 🔲 Planned |
-| Phase 6 — Email (Resend) | 🔲 Planned |
-| Phase 7 — Image Storage (R2) | 🔲 Planned |
+| Phase 6 — Payments (Razorpay) | 🔲 Planned |
+| Phase 7 — Email (Resend) | 🔲 Planned |
+| Phase 8 — Image Storage (R2) | 🔲 Planned |
 
 ---
 
@@ -74,12 +76,14 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## Database Status
 
-- **25 migrations deployed** (000–024) to live Supabase project ✅
-  - Migration 025: Catalog write permissions for admin operations (INSERT, UPDATE, DELETE on products, variants, images, attributes, inventory)
+- **29 migrations deployed** (000–028) to live Supabase project ✅
+  - Migration 025: Catalog write permissions (INSERT/UPDATE/DELETE on products, variants, images, inventory)
+  - Migration 026–028: Product schema extensions (dimensions, barcode, product_type, tags, tax, compare_at_price)
+  - Migration 029: Homepage CMS (banner, promo_blocks, featured_categories)
 - **Types generated** from live schema — `src/lib/db/generated/database.types.ts` ✅
-- **Seed data inserted** — 4 products, 8 variants, inventory, 3+ test users ✅
+- **Seed data inserted** — 4 products, 8 variants, inventory, 4 images ✅
 - **RLS disabled** via migration 022 (all tables); sessions table RLS disabled in migration 023
-- **Admin role** seeded via migration 024 (`assign_admin_by_phone()` function)
+- **Admin auth** — stateless HMAC token, no DB user required (Phase 5.1)
 - **Permissions granted** — anon role has GRANT SELECT + INSERT/UPDATE/DELETE on catalog tables
 - Migration source: `src/lib/db/migrations/`
 - CLI-formatted copies: `supabase/migrations/`
@@ -102,31 +106,39 @@ API Route → Zod validation → Service → Repository → Supabase
 ✅ Frontend UI renders with Navbar, Footer, ProductGrid, ProductDetail
 ✅ Home page displays **Featured Collection** section showing all active products by default
 
-### Admin Platform (Phase 4) ✅
-✅ `POST /api/admin/auth/login` — email + password login with role validation  
-✅ `GET /api/admin/stats` — dashboard metrics (revenue, orders, customers)  
-✅ `GET /api/admin/products` — product list with search/filter  
-✅ `POST /api/admin/products` — create product with variants + images (defaults to `status='active'`)  
-✅ `PATCH /api/admin/products/[id]` — update product details + status  
-✅ `DELETE /api/admin/products/[id]` — delete product  
-✅ `GET /api/admin/inventory` — inventory list  
-✅ `PATCH /api/admin/inventory/[variantId]` — adjust stock with audit logging  
-✅ `/admin/login` page — email + password form with role check  
-✅ `/admin` dashboard — 5 metrics + recent orders  
-✅ `/admin/products/new` — full-page create with pre-save variants/images  
-✅ `/admin/products/[id]/edit` — full-page edit with live variant/image management  
+### Admin Platform (Phase 4 + 5.1) ✅
+✅ `POST /api/admin/auth/login` — email + password → HMAC-signed `admin_token` cookie (stateless, no DB)
+✅ `GET /api/admin/stats` — dashboard metrics via SQL aggregates (no full-table scan)
+✅ `GET /api/admin/products` — product list with search/filter (limit 30)
+✅ `POST /api/admin/products` — create product with variants + images (defaults to `status='active'`)
+✅ `PATCH /api/admin/products/[id]` — update product details + status
+✅ `DELETE /api/admin/products/[id]` — delete product
+✅ `GET /api/admin/inventory` — inventory list
+✅ `PATCH /api/admin/inventory/[variantId]` — adjust stock with audit logging
+✅ `/admin/login` page — email + password form (no phone, no DB user needed)
+✅ `/admin` dashboard — 5 metrics + recent orders
+✅ `/admin/products/new` — full-page create with pre-save variants/images
+✅ `/admin/products/[id]/edit` — full-page edit with live variant/image management
 ✅ `/admin/inventory`, `/admin/orders`, `/admin/coupons`, `/admin/customers` — all working
 
-### Architecture
-✅ All 17+ API routes structured, validated, connected to DB  
-✅ 8 repositories query live database (no direct Supabase elsewhere)  
-✅ 8 services contain business logic  
-✅ Zod schemas in dedicated `src/lib/validations/` folder  
-✅ Session table + phone-primary user identity (migration 023)  
-✅ Admin role + requireAdmin() middleware (migration 024, Phase 4)
+### Admin Auth — CRITICAL (Phase 5.1)
+**Admin login is fully stateless — no database user or role lookup required.**
+- Login verifies `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars
+- Issues HMAC-SHA256 signed `admin_token` cookie (signed with `ADMIN_PASSWORD`, 7-day TTL)
+- `requireAdmin()` middleware verifies token signature + expiry inline — zero DB calls
+- `AdminContext` exposes `{ adminEmail: string }` (not `user`)
+- Audit fields use `ctx.adminEmail` (not `ctx.user.id`)
+- **NEVER revert to user_roles/sessions table lookup for admin**
 
-✅ Frontend pages wired to real API (removed mock-only dependency)  
-❌ OTP verification — Phase 3.1  
+### Architecture
+✅ All 20+ API routes structured, validated, connected to DB
+✅ 8 repositories query live database (no direct Supabase elsewhere)
+✅ 8 services contain business logic
+✅ Zod schemas in dedicated `src/lib/validations/` folder
+✅ Admin auth stateless — HMAC token, no DB user required
+✅ Netlify configured — `netlify.toml` with secrets scan exclusions
+✅ Frontend pages wired to real API (removed mock-only dependency)
+❌ OTP verification — Phase 3.1
 ❌ RLS policies — Phase 3B (will replace migration 022)
 
 ---
@@ -157,17 +169,22 @@ API Route → Zod validation → Service → Repository → Supabase
 
 ## Known Technical Debt
 
+### Phase 5.1 Admin Auth ✅ (Fixed 2026-07-08)
+- Removed phone-based user lookup; admin is now fully stateless
+- `requireAdmin()` uses HMAC-signed cookie — no sessions table, no user_roles table
+- `AdminContext.adminEmail` replaces `AdminContext.user.id`
+
+### Phase 5 Performance ✅ (Fixed)
+- ISR caching on shop/product pages (revalidate=60)
+- SQL aggregates in admin stats — no full-table scan
+- Explicit column selects — no wildcard `select('*')`
+- Cart nested query — single round-trip instead of two
+- Admin products limit 30 (was 100)
+
 ### Phase 4 Complete ✅
 - Admin layout isolation via route groups
-- Email + password admin login with role-based access
 - Full-page product create/edit (Shopify-style)
 - Migration 025 for catalog write permissions
-- All 4 product form bugs fixed (visual polish, toggle alignment, input contrast, single-save flow)
-
-### Product Query Resilience ✅ (Fixed)
-- Changed category joins from INNER to LEFT (products no longer disappear if category is deleted)
-- Added `categories.deleted_at IS NULL` filter (safety check)
-- Products now always visible on storefront (no silent failures)
 
 ### Phase 3B (Next)
 - `orderService.ts` — no PostgreSQL transaction wrapping multi-step order creation

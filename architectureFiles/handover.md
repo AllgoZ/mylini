@@ -1,9 +1,10 @@
 # Handover — MYLINI v2
-**Last Updated:** 2026-06-08  
-**Phase Completed:** Phase 5 (Performance Optimization)  
-**Database:** LIVE ✅ — Supabase `jxazdoawlghbfzdmwwmu.supabase.co` (29 migrations deployed)  
-**Admin Platform:** WORKING ✅ — Email+password login, full product CRUD + CMS content management  
+**Last Updated:** 2026-07-08
+**Phase Completed:** Phase 5.1 (Admin Auth Hardening)
+**Database:** LIVE ✅ — Supabase `jxazdoawlghbfzdmwwmu.supabase.co` (29 migrations deployed)
+**Admin Platform:** WORKING ✅ — Stateless HMAC token auth, no DB user required
 **Storefront API:** OPTIMIZED ✅ — ISR-cached, 20-30% faster, real data with DB aggregates
+**Deployment:** Netlify ✅ — mylini-demo.netlify.app (auto-deploys from main)
 
 ---
 
@@ -19,11 +20,45 @@
 | Phase 3A | ✅ Done | Phone-identity auth — login/session/middleware |
 | Phase 3+4 | ✅ Done | CMS + Admin platform — Homepage sections + full product management |
 | Phase 5 | ✅ Done | Performance optimization — ISR, SQL aggregates, query optimization |
+| Phase 5.1 | ✅ Done | Admin auth hardening — stateless HMAC token, Netlify deployment fixed |
 | Phase 3B | 🔲 Next | Wishlist enhancements — user persistence, cart merge |
 
 ---
 
-## What Was Done This Session (Phase 5 Optimization)
+## What Was Done This Session (Phase 5.1 — Admin Auth Hardening)
+
+### Problem
+Admin login was returning "Internal server error" on Netlify because it tried to look up a user with the `admin` role in the `user_roles` database table, but no such user existed.
+
+### Root Cause
+The old flow was:
+1. Verify `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars ✅
+2. Query `user_roles` JOIN `users` for a user with role='admin' ❌ (no admin user in DB)
+3. Create a session row in the `sessions` table
+4. Set `session` cookie
+
+### Fix: Stateless HMAC Token Auth
+New flow — **zero database calls**:
+1. Verify `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars
+2. Issue HMAC-SHA256 signed `admin_token` cookie (signed with `ADMIN_PASSWORD`, 7-day TTL)
+3. `requireAdmin()` middleware verifies signature + expiry inline — no DB lookup at all
+
+### Files Changed
+| File | Change |
+|---|---|
+| `src/app/api/admin/auth/login/route.ts` | Rewritten: generates signed token, sets `admin_token` cookie |
+| `src/lib/middleware/adminMiddleware.ts` | Rewritten: `verifyAdminToken()` HMAC check, `AdminContext = { adminEmail }` |
+| `src/app/api/admin/inventory/[variantId]/route.ts` | `ctx.user.id` → `ctx.adminEmail` for adjustStock audit |
+| `src/app/api/admin/products/[id]/variants/[variantId]/route.ts` | Same |
+| `netlify.toml` | Added `[build.environment]` with `SECRETS_SCAN_OMIT_PATHS/KEYS` |
+
+### Key Architecture Point
+**`AdminContext` no longer has a `user` field.** It has `adminEmail: string`.
+Any route that calls `requireAdmin()` and needs to log who did an action should use `ctx.adminEmail`.
+
+---
+
+## What Was Done Previous Session (Phase 5 Optimization)
 
 ### Comprehensive Performance Audit & Optimization
 
@@ -148,9 +183,10 @@ Permissions: anon role granted full (migrations 022–025) ✅
 
 ### Admin Platform (WORKING ✅)
 ```
-Login:       POST /api/admin/auth/login → session creation
-Middleware:  requireAdmin() → session + role validation
-Dashboard:   GET /api/admin/stats → 5 metrics
+Login:       POST /api/admin/auth/login → HMAC-signed admin_token cookie (no DB)
+Middleware:  requireAdmin() → verifyAdminToken() inline (no DB lookup)
+Context:     AdminContext = { adminEmail: string }
+Dashboard:   GET /api/admin/stats → 5 metrics (SQL aggregates)
 Products:    GET/POST/PATCH/DELETE /api/admin/products/[id]
 Inventory:   PATCH /api/admin/inventory/[variantId]
 Orders:      GET/PATCH /api/admin/orders/[id]

@@ -1,10 +1,11 @@
 # System Status — MYLINI v2
-**Last Updated:** 2026-06-08
+**Last Updated:** 2026-07-08
 **Build:** ✅ `npx tsc --noEmit` = 0 errors · `npm run build` = passing
 **Database:** ✅ LIVE — `jxazdoawlghbfzdmwwmu.supabase.co` (29 migrations deployed)
-**Admin Platform:** ✅ WORKING — email+password login, full product CRUD + CMS management
+**Admin Platform:** ✅ WORKING — stateless HMAC token auth, no DB user required
 **Storefront API:** ✅ WORKING — real Supabase data with ISR caching, 60s revalidate
 **Performance:** ✅ OPTIMIZED — SQL aggregates, nested queries, explicit selects, 20-30% faster
+**Deployment:** ✅ Netlify — auto-deploys from main branch (mylini-demo.netlify.app)
 
 ---
 
@@ -20,6 +21,7 @@
 | Phase 3A — Phone-identity Auth | ✅ Complete | Login/session/middleware |
 | Phase 3+4 — CMS + Admin Platform | ✅ Complete | Homepage CMS (banner, promo, categories) + full product management |
 | Phase 5 — Performance Optimization | ✅ Complete | ISR caching, SQL aggregates, query optimization, 20-30% faster |
+| Phase 5.1 — Admin Auth Hardening | ✅ Complete | Stateless HMAC token auth — no DB user/role lookup required |
 | Phase 3B — Wishlist Enhancements | 🔲 Next | User wishlists, cart merge, full integration |
 
 ---
@@ -35,7 +37,7 @@
 | RPC functions | 4 (decrement_stock, reserve_stock, release_stock, increment_coupon_usage) |
 | FTS | Active (trg_products_search_vector trigger) |
 | RLS | Disabled via migration 022 (Phase 2 pre-auth); sessions + roles disabled in 023 |
-| Admin role | Seeded via migration 024 (`assign_admin_by_phone()` function) |
+| Admin auth | Stateless HMAC-signed token — no DB user or role table needed |
 | CMS sections | homepage_sections table (banner, promo_block, featured_category) |
 | Seed data | 4 products · 8 variants · 8 inventory · 4 images · 12 attributes |
 | TypeScript types | Generated (1042+ lines, live schema) |
@@ -46,9 +48,10 @@
 
 ### Layout & Authentication
 - **Route isolation** — Next.js route groups `(storefront)/` and `admin/` prevent shell overlap
-- **Admin login** — Email + password at `/admin/login`
-- **Admin middleware** — `requireAdmin()` wrapper validates session AND admin role from `user_roles` table
-- **Session management** — Cookies + Supabase sessions table, 7-day TTL
+- **Admin login** — Email + password at `/admin/login` (no phone, no DB user needed)
+- **Admin middleware** — `requireAdmin()` verifies HMAC-signed `admin_token` cookie inline — zero DB calls
+- **Token** — HMAC-SHA256 signed with `ADMIN_PASSWORD`, payload `{email, exp}`, 7-day TTL
+- **AdminContext** — `{ adminEmail: string }` (not a user object — no DB lookup)
 
 ### Product Management
 - **Full-page create** — `/admin/products/new` with Shopify-style single-save flow
@@ -211,6 +214,17 @@
 | Next.js 16 params awaited | ✅ |
 
 ---
+
+## Recently Completed (Phase 5.1 — Admin Auth)
+
+| Change | File | Impact |
+|---|---|---|
+| Stateless HMAC token login | `src/app/api/admin/auth/login/route.ts` | No DB user required to log in |
+| Token-based requireAdmin() | `src/lib/middleware/adminMiddleware.ts` | Zero DB calls per admin request |
+| adminEmail audit field | `src/app/api/admin/inventory/[variantId]/route.ts` | ctx.adminEmail replaces ctx.user.id |
+| adminEmail in variant PATCH | `src/app/api/admin/products/[id]/variants/[variantId]/route.ts` | Same |
+| Netlify secrets scan exclusions | `netlify.toml` | Docs paths excluded, build passes |
+| Fixed netlify.toml TOML syntax | `netlify.toml` | `[build.environment]` map (not array) |
 
 ## Recently Completed (Phase 5 Optimization)
 

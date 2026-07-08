@@ -1,7 +1,9 @@
 # Frontend Architecture - MYLINI v2
 
 ## Overview
-MYLINI v2 is a modern e-commerce platform built with Next.js 16, React 19, TypeScript, and Tailwind CSS. The storefront uses real Supabase APIs (ISR-cached), while the admin platform provides Shopify-style product management and homepage CMS control. Component-driven architecture with Zustand state management for cart, wishlist, and auth.
+MYLINI v2 is a modern e-commerce platform built with Next.js 16, React 19, TypeScript, and Tailwind CSS. The storefront uses real Supabase APIs (ISR-cached), while the admin platform provides Shopify-style product management and homepage CMS control. Admin auth is **stateless HMAC token-based** — no database user or role table required. Component-driven architecture with Zustand state management for cart, wishlist, and auth.
+
+**Last Updated:** 2026-07-08 — Phase 5.1 (Admin Auth Hardening)
 
 ## Tech Stack
 

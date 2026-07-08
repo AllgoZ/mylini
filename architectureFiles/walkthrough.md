@@ -1,6 +1,6 @@
 # MYLINI v2 — Project Walkthrough
-**Last Updated:** 2026-06-08  
-**Phase Completed:** Phase 5 (Performance Optimization)
+**Last Updated:** 2026-07-08
+**Phase Completed:** Phase 5.1 (Admin Auth Hardening)
 
 ---
 
@@ -28,6 +28,7 @@ MYLINI v2 is a **premium Indian children's ethnic wear e-commerce platform** bui
 | Phase 3A | ✅ Done | Phone-Identity Auth — login/session/middleware |
 | Phase 3+4 | ✅ Done | CMS + Admin Platform — Homepage sections + full product mgmt |
 | Phase 5 | ✅ Done | Performance Optimization — ISR caching, SQL aggregates, 20-30% faster |
+| Phase 5.1 | ✅ Done | Admin Auth Hardening — stateless HMAC token, Netlify deployment |
 | Phase 3B | 🔲 Next | Wishlist Enhancements — user persistence, cart merge, RLS |
 | Phase 6 | 🔲 Planned | Payments — Razorpay integration |
 | Phase 7 | 🔲 Planned | Email — Resend transactional email |
