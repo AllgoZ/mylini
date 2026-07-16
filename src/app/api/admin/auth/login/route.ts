@@ -1,6 +1,6 @@
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
 import { AppError } from '@/lib/utils/errors'
-import { createHmac } from 'crypto'
+import { createHmac } from 'node:crypto'
 import { z } from 'zod'
 
 const schema = z.object({
