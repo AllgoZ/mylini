@@ -123,7 +123,7 @@ export function Navbar() {
         </div>
       </nav>
 
-      <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <MobileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} isAuthenticated={isMounted && isAuthenticated} />
     </>
   );
 }

@@ -8,9 +8,10 @@ import { useEffect } from 'react';
 interface MobileDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  isAuthenticated?: boolean;
 }
 
-const links = [
+const navLinks = [
   { href: '/', label: '🏠 Home' },
   { href: '/shop/girls', label: '👗 Girls' },
   { href: '/shop/boys', label: '👘 Boys' },
@@ -20,7 +21,7 @@ const links = [
   { href: '/about', label: 'ℹ️ About Us' },
 ];
 
-export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
+export function MobileDrawer({ isOpen, onClose, isAuthenticated }: MobileDrawerProps) {
   // Lock body scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -66,16 +67,35 @@ export function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
               </button>
             </div>
             <div className="p-3 px-4 flex flex-col">
-              {links.map((link) => (
+              {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={onClose}
-                  className="block p-[14px_12px] text-base font-semibold text-text rounded-md border-b border-border-soft last:border-none transition-all hover:bg-surface-2 hover:text-clay hover:pl-5"
+                  className="block p-[14px_12px] text-base font-semibold text-text rounded-md border-b border-border-soft transition-all hover:bg-surface-2 hover:text-clay hover:pl-5"
                 >
                   {link.label}
                 </Link>
               ))}
+
+              {isAuthenticated && (
+                <div className="mt-3 pt-3 border-t border-border-soft flex flex-col gap-0.5">
+                  <Link
+                    href="/orders"
+                    onClick={onClose}
+                    className="block p-[14px_12px] text-base font-semibold text-text rounded-md border-b border-border-soft transition-all hover:bg-surface-2 hover:text-clay hover:pl-5"
+                  >
+                    📦 My Orders
+                  </Link>
+                  <Link
+                    href="/account"
+                    onClick={onClose}
+                    className="block p-[14px_12px] text-base font-semibold text-text rounded-md transition-all hover:bg-surface-2 hover:text-clay hover:pl-5"
+                  >
+                    👤 My Account
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         </>
