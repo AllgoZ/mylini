@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -47,7 +47,7 @@
   --radius-2xl: 36px;
 
   /* Editorial Fonts (Soothing & iOS Readable) */
-  --font-head: var(--font-playfair), Georgia, serif;
+  --font-head: var(--font-jakarta), system-ui, sans-serif;
   --font-body: var(--font-inter), system-ui, sans-serif;
 
   /* Animation Easing */
