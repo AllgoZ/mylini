@@ -25,8 +25,16 @@ const LIST_SELECT_LEFT = `
   images:product_images(public_url, is_primary, sort_order)
 `
 
+// Used only by findBySlug (the customer-facing product page). Explicit columns instead of
+// `*` — excludes meta_title/meta_description/og_image/canonical_url/search_vector, none of
+// which ProductDetailClient reads (search_vector in particular is a TSVECTOR, dead weight
+// on every product-page load). findByIdForAdmin keeps `*` via DETAIL_SELECT_LEFT below.
 const DETAIL_SELECT_INNER = `
-  *,
+  id, category_id, name, slug, description, status, base_price, sale_price,
+  is_featured, is_best_seller, is_new_arrival,
+  created_at, updated_at, deleted_at,
+  weight_grams, length_cm, width_cm, height_cm, size_chart_url,
+  product_type, tags, charge_tax,
   category:categories!inner(id, name, slug),
   variants:product_variants(
     *,
@@ -77,6 +85,10 @@ export const ProductRepository = {
     if (filters.tag) query = (query as any).contains('tags', [filters.tag])
 
     // Resolve size filter via parallel variant lookup so it doesn't block the main query chain
+    if (filters.exclude) {
+      query = query.neq('id', filters.exclude)
+    }
+
     if (filters.size) {
       const { data: vData } = await supabase
         .from('product_variants')

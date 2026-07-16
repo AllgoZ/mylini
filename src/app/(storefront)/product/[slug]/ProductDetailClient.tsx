@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShieldCheck, Truck, Undo2, Heart, Minus, Plus, Search, Ruler, X as XIcon } from 'lucide-react';
-import type { ProductWithVariants } from '@/types/product';
+import { ShieldCheck, Truck, Undo2, Heart, Minus, Plus, Search, Ruler, X as XIcon, ShoppingCart, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import type { ProductWithVariants, ProductSummary } from '@/types/product';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishStore } from '@/store/useWishStore';
 import { adaptProductListItem } from '@/lib/utils/adapters';
 import { getDetailImageUrl, getThumbImageUrl } from '@/lib/utils/imageUrl';
+import { ProductCard } from '@/components/shop/ProductCard';
 import { toast } from 'sonner';
 
 interface Props {
@@ -23,7 +25,30 @@ export function ProductDetailClient({ product }: Props) {
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<ProductSummary[]>([]);
+
+  // Fetch related products on mount
+  useEffect(() => {
+    const categorySlug = product.category?.slug;
+    if (!categorySlug) return;
+    fetch(`/api/products?category=${categorySlug}&exclude=${product.id}&limit=8&sort=newest`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.data?.items) {
+          setRelatedProducts(json.data.items.map((p: any) => adaptProductListItem(p)));
+        }
+      })
+      .catch(() => {});
+  }, [product.id, product.category?.slug]);
+
+  // Auto-dismiss "just added" bar after 4s
+  useEffect(() => {
+    if (!justAdded) return;
+    const t = setTimeout(() => setJustAdded(false), 4000);
+    return () => clearTimeout(t);
+  }, [justAdded]);
 
   // Mobile swipe gallery ref
   const mobileScrollRef = useRef<HTMLDivElement>(null);
@@ -72,8 +97,24 @@ export function ProductDetailClient({ product }: Props) {
     if (!selectedVariant) return;
     setAdding(true);
     try {
-      await addItem(selectedVariant.id, quantity);
-      toast.success(`${product.name} added to cart`);
+      await addItem(selectedVariant.id, quantity, {
+        variant: {
+          id: selectedVariant.id,
+          sku: selectedVariant.sku,
+          color: selectedVariant.color,
+          size: selectedVariant.size,
+          price_override: selectedVariant.price_override,
+        },
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          base_price: product.base_price,
+          sale_price: product.sale_price,
+        },
+        primary_image: productSummary.image || null,
+      });
+      setJustAdded(true);
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to add to cart');
     } finally {
@@ -370,6 +411,31 @@ export function ProductDetailClient({ product }: Props) {
         </div>
       </div>
 
+      {/* Related Products */}
+      {relatedProducts.length > 0 && (
+        <div className="w-full mx-auto max-w-7xl px-4 md:px-8 lg:px-12 pb-16 md:pb-20">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-head text-[1.3rem] md:text-[1.6rem] font-bold text-ink tracking-tight">You May Also Like</h2>
+            {product.category && (
+              <Link
+                href={`/shop/${product.category.slug}`}
+                className="flex items-center gap-1 text-[0.8rem] font-bold text-clay hover:text-clay-deep transition-colors"
+              >
+                View All <ChevronRight size={14} />
+              </Link>
+            )}
+          </div>
+          {/* Mobile: horizontal scroll; Desktop: grid */}
+          <div className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
+            {relatedProducts.slice(0, 8).map((p, idx) => (
+              <div key={p.id} className="snap-start shrink-0 w-[160px] sm:w-[190px] md:w-auto">
+                <ProductCard product={p} delay={idx * 0.06} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Size Chart Overlay */}
       {sizeChartOpen && (product as any).size_chart_url && (
         <div
@@ -404,7 +470,7 @@ export function ProductDetailClient({ product }: Props) {
         </div>
       )}
 
-      {/* Mobile Sticky CTA */}
+      {/* Mobile Sticky Add-to-Cart */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-canvas/90 backdrop-blur-xl border-t border-border-brand p-4 px-5 flex items-center justify-between z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
         <div className="font-body text-[1.4rem] font-extrabold text-ink tracking-tight">
           ₹{(effectivePrice * quantity).toLocaleString('en-IN')}
@@ -417,6 +483,40 @@ export function ProductDetailClient({ product }: Props) {
           {adding ? 'Adding...' : 'Add to Cart'}
         </button>
       </div>
+
+      {/* View Cart Bar — appears after successful add */}
+      <AnimatePresence>
+        {justAdded && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            className="fixed bottom-[76px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
+          >
+            <div className="w-8 h-8 bg-sage rounded-full flex items-center justify-center shrink-0">
+              <ShoppingCart size={15} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-[0.88rem] leading-tight">Added to cart!</p>
+              <p className="text-[0.75rem] text-white/60 font-medium line-clamp-1">{product.name}</p>
+            </div>
+            <Link
+              href="/cart"
+              onClick={() => setJustAdded(false)}
+              className="shrink-0 flex items-center gap-1 bg-white text-ink text-[0.8rem] font-extrabold px-3.5 py-2 rounded-xl hover:bg-clay hover:text-white transition-colors"
+            >
+              View Cart <ChevronRight size={13} />
+            </Link>
+            <button
+              onClick={() => setJustAdded(false)}
+              className="shrink-0 text-white/40 hover:text-white transition-colors"
+            >
+              <XIcon size={16} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -97,52 +97,52 @@ export default function CartPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95, height: 0, overflow: 'hidden' }}
                       transition={{ duration: 0.3 }}
-                      className="flex flex-col sm:flex-row gap-5 p-5 bg-white rounded-2xl border border-border-soft shadow-s1 relative"
+                      className="flex gap-3.5 p-4 bg-white rounded-2xl border border-border-soft shadow-s1 relative"
                     >
-                      <Link href={slug ? `/product/${slug}` : '#'} className="shrink-0 w-28 h-36 bg-surface-2 rounded-xl overflow-hidden relative border border-border">
+                      <Link href={slug ? `/product/${slug}` : '#'} className="shrink-0 w-20 h-24 sm:w-28 sm:h-36 bg-surface-2 rounded-xl overflow-hidden relative border border-border">
                         {image ? (
-                          <Image src={image} alt={name} fill className="object-cover" sizes="112px" />
+                          <Image src={image} alt={name} fill className="object-cover" sizes="(max-width:640px) 80px, 112px" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
                         )}
                       </Link>
 
-                      <div className="flex-1 flex flex-col justify-between py-1">
-                        <div className="flex justify-between gap-4">
-                          <div>
-                            <Link href={slug ? `/product/${slug}` : '#'} className="font-semibold text-[1.05rem] text-ink hover:text-clay transition-colors line-clamp-2 leading-tight mb-1.5">
+                      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                        <div className="flex justify-between gap-2">
+                          <div className="min-w-0">
+                            <Link href={slug ? `/product/${slug}` : '#'} className="font-semibold text-[0.95rem] sm:text-[1.05rem] text-ink hover:text-clay transition-colors line-clamp-2 leading-tight mb-1">
                               {name}
                             </Link>
                             {size && (
-                              <p className="text-[0.85rem] text-text-mid font-medium mb-3">
+                              <p className="text-[0.8rem] text-text-mid font-medium">
                                 Size: <span className="text-ink font-bold">{size}</span>
                               </p>
                             )}
                           </div>
                           <button
                             onClick={() => handleRemove(variantId)}
-                            className="text-text-light hover:text-destructive transition-colors shrink-0 h-fit"
+                            className="text-text-light hover:text-destructive transition-colors shrink-0 h-fit mt-0.5"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
 
-                        <div className="flex items-end justify-between mt-4">
+                        <div className="flex items-center justify-between mt-3 gap-2">
                           <div className="flex items-center border-[1.5px] border-border rounded-lg overflow-hidden bg-surface">
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity - 1)} className="w-9 h-9 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
-                              <Minus size={14} />
+                            <button onClick={() => handleUpdateQty(variantId, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
+                              <Minus size={13} />
                             </button>
-                            <div className="w-9 text-center font-bold text-[0.9rem] text-text select-none">{item.quantity}</div>
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity + 1)} className="w-9 h-9 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
-                              <Plus size={14} />
+                            <div className="w-8 text-center font-bold text-[0.85rem] text-text select-none">{item.quantity}</div>
+                            <button onClick={() => handleUpdateQty(variantId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
+                              <Plus size={13} />
                             </button>
                           </div>
-                          <div className="text-right">
-                            <div className="font-body text-[1.2rem] font-extrabold text-ink tracking-tight leading-tight">
+                          <div className="text-right shrink-0">
+                            <div className="font-body text-[1.05rem] font-extrabold text-ink tracking-tight leading-tight">
                               ₹{(price * item.quantity).toLocaleString('en-IN')}
                             </div>
                             {item.quantity > 1 && (
-                              <div className="text-[0.72rem] text-text-light font-medium mt-0.5">
+                              <div className="text-[0.7rem] text-text-light font-medium mt-0.5">
                                 ₹{price.toLocaleString('en-IN')} × {item.quantity}
                               </div>
                             )}

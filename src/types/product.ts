@@ -82,6 +82,7 @@ export type ProductFilters = {
   price_max?: number
   product_type?: string
   tag?: string
+  exclude?: string
 }
 
 export type ProductFilterMetadata = {

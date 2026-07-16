@@ -10,6 +10,8 @@ export type OrderWithItems = Order & {
   items: OrderItem[]
   address: Address
   coupon: Pick<Coupon, 'id' | 'code' | 'type' | 'value'> | null
+  tracking_number?: string | null
+  tracking_url?: string | null
 }
 
 export type CreateOrderInput = {
@@ -29,6 +31,8 @@ export type OrderSummary = Pick<
 > & {
   item_count: number
   items_preview: { product_name_snapshot: string; image_snapshot: string | null }[]
+  tracking_number?: string | null
+  tracking_url?: string | null
 }
 
 export type AdminOrderSummary = Omit<OrderSummary, 'items_preview'> & {

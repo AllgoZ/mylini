@@ -34,3 +34,7 @@ export async function logoutApi(): Promise<void> {
 export async function getOrders(): Promise<OrderSummary[]> {
   return apiFetch<OrderSummary[]>('/api/orders')
 }
+
+export async function getOrderById(id: string): Promise<import('@/types/order').OrderWithItems> {
+  return apiFetch(`/api/orders/${id}`)
+}

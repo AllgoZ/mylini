@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/db/server'
-import { NotFoundError } from '@/lib/utils/errors'
+import { NotFoundError, ValidationError } from '@/lib/utils/errors'
 import type { Order, OrderWithItems, OrderStatus, OrderSummary, AdminOrderSummary } from '@/types/order'
 import type { Database } from '@/lib/db/generated/database.types'
 
@@ -10,6 +10,26 @@ export type AdminOrderRow = AdminOrderSummary & {
 }
 
 type OrderItemInsert = Database['public']['Tables']['order_items']['Insert']
+
+export type CreateOrderTransactionalInput = {
+  user_id: string
+  address_id: string
+  coupon_id: string | null
+  subtotal: number
+  discount: number
+  total: number
+  notes: string | null
+  items: {
+    variant_id: string
+    quantity: number
+    unit_price: number
+    total_price: number
+    product_name_snapshot: string
+    sku_snapshot: string
+    variant_snapshot: string
+    image_snapshot: string | null
+  }[]
+}
 
 export const OrderRepository = {
   async create(data: Database['public']['Tables']['orders']['Insert']): Promise<Order> {
@@ -30,6 +50,42 @@ export const OrderRepository = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabase.from('order_items').insert(items as any)
     if (error) throw new Error(error.message)
+  },
+
+  // Atomic replacement for create() + addItems() + per-item stock decrement + coupon usage —
+  // see migration 030. All of it runs inside a single Postgres function call, so it's either
+  // fully committed or fully rolled back, and it's one round trip instead of 4N+2.
+  async createTransactional(input: CreateOrderTransactionalInput): Promise<Order> {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('create_order_transactional', {
+      p_user_id: input.user_id,
+      p_address_id: input.address_id,
+      p_coupon_id: input.coupon_id,
+      p_subtotal: input.subtotal,
+      p_discount: input.discount,
+      p_total: input.total,
+      p_notes: input.notes,
+      p_items: input.items,
+    })
+
+    if (error) {
+      const message = error.message ?? ''
+      const stockMatch = message.match(/INSUFFICIENT_STOCK:([0-9a-f-]+)/i)
+      if (stockMatch) {
+        // Same error type/message OrderService threw before the atomic refactor
+        throw new ValidationError(`Insufficient stock for variant ${stockMatch[1]}`)
+      }
+      if (message.includes('COUPON_INVALID')) {
+        // Matches prior behavior: a coupon-usage race here previously surfaced as a
+        // generic Error too (via CouponRepository.incrementUsage's RPC), i.e. a 500
+        // with no message leaked to the client — same outcome here.
+        throw new Error('Coupon is no longer valid')
+      }
+      throw new Error(message)
+    }
+
+    return data as Order
   },
 
   async findById(id: string): Promise<OrderWithItems> {
@@ -53,7 +109,7 @@ export const OrderRepository = {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, subtotal, discount, total, created_at, items:order_items(quantity, product_name_snapshot, image_snapshot)')
+      .select('id, status, subtotal, discount, total, created_at, tracking_number, tracking_url, items:order_items(quantity, product_name_snapshot, image_snapshot)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -124,6 +180,20 @@ export const OrderRepository = {
     const { data, error } = await (supabase as any)
       .from('orders')
       .update({ status })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error || !data) throw new NotFoundError(`Order '${id}'`)
+    return data
+  },
+
+  async updateTracking(id: string, tracking_number: string | null, tracking_url: string | null): Promise<Order> {
+    const supabase = await createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('orders')
+      .update({ tracking_number, tracking_url })
       .eq('id', id)
       .select()
       .single()

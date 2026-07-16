@@ -19,3 +19,11 @@ export async function adminUpdateOrderStatus(id: string, status: OrderStatus): P
     body: JSON.stringify({ status }),
   })
 }
+
+export async function adminUpdateTracking(id: string, tracking_number: string, tracking_url: string): Promise<Order> {
+  return apiFetch<Order>(`/api/admin/orders/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tracking_number, tracking_url }),
+  })
+}

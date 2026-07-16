@@ -2,9 +2,9 @@
 
 import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Check } from 'lucide-react'
+import { ArrowLeft, Check, Package, ExternalLink } from 'lucide-react'
 import { StatusBadge } from '@/components/admin/StatusBadge'
-import { adminGetOrder, adminUpdateOrderStatus } from '@/lib/api/admin/orders'
+import { adminGetOrder, adminUpdateOrderStatus, adminUpdateTracking } from '@/lib/api/admin/orders'
 import type { OrderWithItems } from '@/types/order'
 import type { OrderStatus } from '@/types/order'
 import { toast } from 'sonner'
@@ -17,10 +17,18 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
   const [loading, setLoading] = useState(true)
   const [newStatus, setNewStatus] = useState<OrderStatus | ''>('')
   const [updating, setUpdating] = useState(false)
+  const [trackingNumber, setTrackingNumber] = useState('')
+  const [trackingUrl, setTrackingUrl] = useState('')
+  const [savingTracking, setSavingTracking] = useState(false)
 
   useEffect(() => {
     adminGetOrder(id)
-      .then(o => { setOrder(o); setNewStatus(o.status) })
+      .then(o => {
+        setOrder(o)
+        setNewStatus(o.status)
+        setTrackingNumber(o.tracking_number ?? '')
+        setTrackingUrl(o.tracking_url ?? '')
+      })
       .catch(e => toast.error(e.message))
       .finally(() => setLoading(false))
   }, [id])
@@ -36,6 +44,19 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
       toast.error(e.message)
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const handleSaveTracking = async () => {
+    setSavingTracking(true)
+    try {
+      await adminUpdateTracking(id, trackingNumber, trackingUrl)
+      setOrder(o => o ? { ...o, tracking_number: trackingNumber, tracking_url: trackingUrl } : null)
+      toast.success('Tracking info saved')
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setSavingTracking(false)
     }
   }
 
@@ -81,6 +102,54 @@ export default function AdminOrderDetailPage({ params }: { params: Promise<{ id:
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#C4654A] text-white text-[0.875rem] font-bold hover:bg-[#A0523A] disabled:opacity-50 transition-colors"
           >
             <Check size={15} /> {updating ? 'Updating…' : 'Update'}
+          </button>
+        </div>
+      </div>
+
+      {/* Shipment Tracking */}
+      <div className="bg-white rounded-2xl border border-[#E7E5E4] p-5 shadow-sm mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Package size={16} className="text-[#C4654A]" />
+          <h2 className="font-semibold text-[#1C1917]">Shipment Tracking</h2>
+          {order.tracking_number && (
+            <span className="ml-auto text-[0.72rem] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Tracking Added</span>
+          )}
+        </div>
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="block text-[0.78rem] font-semibold text-[#78716C] mb-1.5">Tracking Number</label>
+            <input
+              type="text"
+              value={trackingNumber}
+              onChange={e => setTrackingNumber(e.target.value)}
+              placeholder="e.g. DELHIVERY1234567890"
+              className="w-full bg-[#FAFAF9] border border-[#E7E5E4] rounded-xl px-3.5 py-2.5 text-[0.875rem] text-[#1C1917] outline-none focus:border-[#C4654A] transition-all placeholder:text-[#A8A29E]"
+            />
+          </div>
+          <div>
+            <label className="block text-[0.78rem] font-semibold text-[#78716C] mb-1.5">Tracking URL</label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={trackingUrl}
+                onChange={e => setTrackingUrl(e.target.value)}
+                placeholder="https://www.delhivery.com/track/..."
+                className="flex-1 bg-[#FAFAF9] border border-[#E7E5E4] rounded-xl px-3.5 py-2.5 text-[0.875rem] text-[#1C1917] outline-none focus:border-[#C4654A] transition-all placeholder:text-[#A8A29E]"
+              />
+              {trackingUrl && (
+                <a href={trackingUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-center w-10 h-10 rounded-xl border border-[#E7E5E4] bg-[#FAFAF9] text-[#78716C] hover:text-[#C4654A] transition-colors shrink-0">
+                  <ExternalLink size={15} />
+                </a>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={handleSaveTracking}
+            disabled={savingTracking}
+            className="self-end flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#C4654A] text-white text-[0.875rem] font-bold hover:bg-[#A0523A] disabled:opacity-50 transition-colors"
+          >
+            <Check size={15} /> {savingTracking ? 'Saving…' : 'Save Tracking'}
           </button>
         </div>
       </div>

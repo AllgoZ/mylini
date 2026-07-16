@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getOrders } from '@/lib/api/auth';
 import type { OrderSummary } from '@/types/order';
@@ -89,9 +89,10 @@ export default function OrdersPage() {
               const orderId = order.id.slice(0, 8).toUpperCase();
 
               return (
-                <div
+                <Link
                   key={order.id}
-                  className="bg-white rounded-2xl border border-border-soft shadow-s1 p-5 flex flex-col gap-4"
+                  href={`/orders/${order.id}`}
+                  className="bg-white rounded-2xl border border-border-soft shadow-s1 p-5 flex flex-col gap-4 hover:border-clay/30 hover:shadow-s2 transition-all"
                 >
                   {/* Header row */}
                   <div className="flex items-start justify-between gap-4">
@@ -99,13 +100,16 @@ export default function OrdersPage() {
                       <div className="font-bold text-ink text-[0.95rem] mb-0.5">Order #{orderId}</div>
                       <div className="text-[0.78rem] text-text-light font-medium">{date} · {order.item_count} item{order.item_count !== 1 ? 's' : ''}</div>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className={`text-[0.72rem] font-bold px-2.5 py-1 rounded-full ${status.color}`}>
-                        {status.label}
-                      </span>
-                      <div className="font-bold text-ink text-[0.9rem]">
-                        ₹{order.total.toLocaleString('en-IN')}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className={`text-[0.72rem] font-bold px-2.5 py-1 rounded-full ${status.color}`}>
+                          {status.label}
+                        </span>
+                        <div className="font-bold text-ink text-[0.9rem]">
+                          ₹{order.total.toLocaleString('en-IN')}
+                        </div>
                       </div>
+                      <ChevronRight size={16} className="text-text-light shrink-0 mt-0.5" />
                     </div>
                   </div>
 
@@ -139,7 +143,14 @@ export default function OrdersPage() {
                       </div>
                     </div>
                   )}
-                </div>
+
+                  {/* Tracking indicator */}
+                  {order.tracking_number && (
+                    <div className="flex items-center gap-2 text-[0.75rem] font-semibold text-clay bg-clay/5 border border-clay/15 rounded-lg px-3 py-1.5">
+                      <span>📦</span> Tracking available — {order.tracking_number}
+                    </div>
+                  )}
+                </Link>
               );
             })}
           </div>

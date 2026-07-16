@@ -66,6 +66,12 @@ export const CartService = {
     const userCart = await CartRepository.findByUserId(userId) ||
       await CartRepository.findOrCreateBySession(userId) // Fallback: create temp, will be replaced
 
+    // Fetch the user cart's current items once — track merged quantities locally as the
+    // loop progresses instead of re-fetching the whole cart on every guest item (was an
+    // N+1: one full getWithItems() call per item, just to check if that one variant existed).
+    const userWithItems = await CartRepository.getWithItems(userCart.id)
+    const userQuantities = new Map(userWithItems.items.map((i) => [i.variant_id, i.quantity]))
+
     // For each item in guest cart
     for (const item of guestWithItems.items) {
       // Check inventory
@@ -75,19 +81,19 @@ export const CartService = {
         continue
       }
 
-      // Try to find existing item in user cart
-      const userWithItems = await CartRepository.getWithItems(userCart.id)
-      const existingUserItem = userWithItems.items.find((i) => i.variant_id === item.variant_id)
+      const existingQty = userQuantities.get(item.variant_id)
 
-      if (existingUserItem) {
+      if (existingQty != null) {
         // Merge quantities
-        const mergedQty = existingUserItem.quantity + item.quantity
+        const mergedQty = existingQty + item.quantity
         if (inventory.stock_available >= mergedQty) {
           await CartRepository.updateItem(userCart.id, item.variant_id, mergedQty)
+          userQuantities.set(item.variant_id, mergedQty)
         }
       } else {
         // Add new item to user cart
         await CartRepository.addItem(userCart.id, item.variant_id, item.quantity)
+        userQuantities.set(item.variant_id, item.quantity)
       }
     }
 

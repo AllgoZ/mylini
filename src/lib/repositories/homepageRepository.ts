@@ -20,6 +20,23 @@ export const HomepageRepository = {
     return (data ?? []) as HomepageSection[]
   },
 
+  // Fetch several section types in one round trip (e.g. banner + promo_block for the
+  // homepage) instead of one findByType() call per type. Ordered by type then sort_order
+  // so filtering the result by type afterward preserves each type's internal ordering.
+  async findByTypes(types: HomepageSectionType[]): Promise<HomepageSection[]> {
+    const supabase = await db()
+    const { data, error } = await supabase
+      .from('homepage_sections')
+      .select('*')
+      .in('section_type', types)
+      .eq('is_active', true)
+      .order('section_type', { ascending: true })
+      .order('sort_order', { ascending: true })
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as HomepageSection[]
+  },
+
   async findAll(): Promise<HomepageSection[]> {
     const supabase = await db()
     const { data, error } = await supabase

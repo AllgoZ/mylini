@@ -9,6 +9,7 @@ import { useWishStore } from '@/store/useWishStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { toast } from 'sonner';
+import { getCardImageUrl } from '@/lib/utils/imageUrl';
 
 export default function WishlistPage() {
   const { user, loading: authLoading, openLoginModal } = useAuthStore();
@@ -115,7 +116,7 @@ export default function WishlistPage() {
                     <Link href={`/product/${product.slug}`} className="relative aspect-[3/4] bg-surface-2 overflow-hidden flex items-end justify-center">
                       {product.image ? (
                         <Image
-                          src={product.image}
+                          src={getCardImageUrl(product.image)}
                           alt={product.name}
                           fill
                           className="object-cover transition-transform duration-[0.6s] ease-[--ease] group-hover:scale-105"

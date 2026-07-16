@@ -18,11 +18,15 @@ interface ConfirmedOrder {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, fetchCart, getSubtotal, clearCart } = useCartStore();
-  const { user, isAuthenticated, loading: authLoading, hydrate, openLoginModal } = useAuthStore();
+  const { user, isAuthenticated, loading: authLoading, openLoginModal } = useAuthStore();
   const items = cart?.items ?? [];
 
-  useEffect(() => { fetchCart(); }, [fetchCart]);
-  useEffect(() => { hydrate(); }, [hydrate]);
+  // Cart is already fetched by Navbar (guarded the same way) and auth is already
+  // hydrated by AuthProvider in the parent storefront layout — avoid re-fetching both
+  // on every checkout mount.
+  useEffect(() => {
+    if (!useCartStore.getState().cart) fetchCart();
+  }, [fetchCart]);
 
   const subtotal = getSubtotal();
   const shipping = subtotal > 4000 ? 0 : 150;
@@ -271,22 +275,24 @@ export default function CheckoutPage() {
                   const size = item.variant?.size ?? item.variant?.color ?? '';
                   const image = item.variant?.primary_image ?? null;
                   return (
-                    <div key={item.variant_id} className="flex gap-4 items-center relative">
-                      <div className="relative w-16 h-16 bg-white rounded-lg overflow-hidden border border-border-soft shrink-0">
-                        {image ? (
-                          <Image src={image} alt={name} fill className="object-cover" sizes="64px" />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
-                        )}
-                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-ink text-white rounded-full flex items-center justify-center text-[0.6rem] font-bold z-10 border border-white">
+                    <div key={item.variant_id} className="flex gap-3 items-center">
+                      <div className="relative shrink-0">
+                        <div className="w-14 h-14 bg-white rounded-lg overflow-hidden border border-border-soft">
+                          {image ? (
+                            <Image src={image} alt={name} fill className="object-cover" sizes="56px" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
+                          )}
+                        </div>
+                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-ink text-white rounded-full flex items-center justify-center text-[0.6rem] font-bold border-2 border-white">
                           {item.quantity}
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-[0.85rem] text-ink line-clamp-1">{name}</h4>
-                        {size && <p className="text-[0.75rem] text-text-light font-medium">{size}</p>}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-[0.82rem] text-ink line-clamp-2 leading-snug">{name}</h4>
+                        {size && <p className="text-[0.72rem] text-text-light font-medium mt-0.5">{size}</p>}
                       </div>
-                      <div className="font-bold text-[0.9rem] text-ink shrink-0">
+                      <div className="font-bold text-[0.88rem] text-ink shrink-0 ml-1">
                         ₹{(cartItemPrice(item) * item.quantity).toLocaleString('en-IN')}
                       </div>
                     </div>

@@ -16,6 +16,7 @@ export const productQuerySchema = z.object({
   price_max: z.coerce.number().min(0).optional(),
   product_type: z.string().optional(),
   tag: z.string().optional(),
+  exclude: z.string().uuid().optional(),
 })
 
 export type ProductQueryInput = z.infer<typeof productQuerySchema>

@@ -30,17 +30,19 @@ const gradientSet2 = [
 ];
 
 export default async function Home() {
-  const [bestSellersData, newArrivalsData, featuredData, bannerSections, promoBlocks] = await Promise.all([
+  const [bestSellersData, newArrivalsData, featuredData, homeSections] = await Promise.all([
     ProductService.list({ bestSeller: true, limit: 4 }).catch(() => null),
     ProductService.list({ newArrival: true, limit: 4 }).catch(() => null),
     ProductService.list({ limit: 8 }).catch(() => null),
-    HomepageService.getByType('banner').catch(() => [] as Awaited<ReturnType<typeof HomepageService.getByType>>),
-    HomepageService.getByType('promo_block').catch(() => [] as Awaited<ReturnType<typeof HomepageService.getByType>>),
+    // Banner + promo blocks in one round trip (was 2 separate getByType() calls)
+    HomepageService.getByTypes(['banner', 'promo_block']).catch(() => [] as Awaited<ReturnType<typeof HomepageService.getByTypes>>),
   ]);
 
   const bestSellers = (bestSellersData?.items ?? []).map(adaptProductListItem);
   const newArrivals = (newArrivalsData?.items ?? []).map(adaptProductListItem);
   const featured = (featuredData?.items ?? []).map(adaptProductListItem);
+  const bannerSections = homeSections.filter((s) => s.section_type === 'banner');
+  const promoBlocks = homeSections.filter((s) => s.section_type === 'promo_block');
   const bannerSection = bannerSections[0] ?? null;
 
   return (

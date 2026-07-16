@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/middleware/adminMiddleware'
 import { ProductService } from '@/lib/services/productService'
 import { createProductSchema } from '@/lib/validations/adminProductSchema'
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
+import { revalidatePath } from 'next/cache'
 
 export const GET = requireAdmin(async (request, ctx) => {
   try {
@@ -25,6 +26,10 @@ export const POST = requireAdmin(async (request, ctx) => {
     const body = await request.json()
     const data = createProductSchema.parse(body)
     const product = await ProductService.create(data as any)
+    // Bust the ISR cache immediately instead of waiting up to 60s for the storefront to pick up the new product
+    revalidatePath('/')
+    revalidatePath('/shop/[category]', 'page')
+    revalidatePath('/product/[slug]', 'page')
     return successResponse(product, 201)
   } catch (error) {
     return errorResponse(error)

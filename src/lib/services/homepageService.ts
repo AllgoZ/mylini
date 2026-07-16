@@ -6,6 +6,10 @@ export const HomepageService = {
     return HomepageRepository.findByType(type)
   },
 
+  async getByTypes(types: HomepageSectionType[]): Promise<HomepageSection[]> {
+    return HomepageRepository.findByTypes(types)
+  },
+
   async getAll(): Promise<HomepageSection[]> {
     return HomepageRepository.findAll()
   },
