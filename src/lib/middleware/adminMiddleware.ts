@@ -1,15 +1,23 @@
-import { createHmac } from 'node:crypto'
+import { createHmac, timingSafeEqual } from 'node:crypto'
+import { checkRateLimit } from '@/lib/utils/rateLimit'
+import { logAuditEvent } from '@/lib/utils/auditLog'
+import { captureError } from '@/lib/utils/sentry'
 
 export interface AdminContext {
   adminEmail: string
 }
 
-function verifyAdminToken(token: string, secret: string): string | null {
+// Exported so src/middleware.ts can reuse the exact same verification logic for
+// server-side route protection instead of a second, parallel implementation.
+export function verifyAdminToken(token: string, secret: string): string | null {
   try {
     const [payload, sig] = token.split('.')
     if (!payload || !sig) return null
     const expected = createHmac('sha256', secret).update(payload).digest('base64url')
-    if (sig !== expected) return null
+    // Constant-time — a plain !== leaks (via timing) how much of the signature matched.
+    const sigBuf = Buffer.from(sig)
+    const expectedBuf = Buffer.from(expected)
+    if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) return null
     const { email, exp } = JSON.parse(Buffer.from(payload, 'base64url').toString())
     if (exp < Date.now()) return null
     return email as string
@@ -54,9 +62,21 @@ export function requireAdmin(
         )
       }
 
+      // Generous — internal-tooling backstop against a compromised/runaway admin client,
+      // not a brute-force concern (the token is already verified at this point).
+      const { allowed, retryAfter } = await checkRateLimit(`admin-api:${adminEmail}`, 300, 60)
+      if (!allowed) {
+        return Response.json(
+          { data: null, error: `Too many requests. Try again in ${retryAfter}s.`, status: 429 },
+          { status: 429 }
+        )
+      }
+
+      logAuditEvent({ action: 'admin_access', resource: new URL(request.url).pathname, performed_by: adminEmail })
+
       return await handler(request, { adminEmail })
     } catch (err: unknown) {
-      console.error('[requireAdmin] unhandled error:', err)
+      captureError(err, { source: 'requireAdmin' })
       return Response.json(
         { data: null, error: (err as Error)?.message ?? 'Internal server error', status: 500 },
         { status: 500 }

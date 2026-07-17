@@ -1,9 +1,16 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
 import type { HomepageSection, CreateHomepageSectionInput, UpdateHomepageSectionInput, HomepageSectionType } from '@/types/homepage'
 
 // homepage_sections is defined in migration 029 — cast required until types are regenerated
 async function db() {
   return (await createClient()) as any
+}
+
+// Admin content-management methods (create/update/remove/reorder/findAll) use the
+// service-role client — anon is read-only on homepage_sections (migration 031).
+function adminDb() {
+  return createAdminClient() as any
 }
 
 export const HomepageRepository = {
@@ -38,7 +45,7 @@ export const HomepageRepository = {
   },
 
   async findAll(): Promise<HomepageSection[]> {
-    const supabase = await db()
+    const supabase = adminDb()
     const { data, error } = await supabase
       .from('homepage_sections')
       .select('*')
@@ -50,7 +57,7 @@ export const HomepageRepository = {
   },
 
   async findById(id: string): Promise<HomepageSection | null> {
-    const supabase = await db()
+    const supabase = adminDb()
     const { data } = await supabase
       .from('homepage_sections')
       .select('*')
@@ -61,7 +68,7 @@ export const HomepageRepository = {
   },
 
   async create(input: CreateHomepageSectionInput): Promise<HomepageSection> {
-    const supabase = await db()
+    const supabase = adminDb()
     const { data, error } = await supabase
       .from('homepage_sections')
       .insert(input)
@@ -73,7 +80,7 @@ export const HomepageRepository = {
   },
 
   async update(id: string, input: UpdateHomepageSectionInput): Promise<HomepageSection> {
-    const supabase = await db()
+    const supabase = adminDb()
     const { data, error } = await supabase
       .from('homepage_sections')
       .update({ ...input, updated_at: new Date().toISOString() })
@@ -86,7 +93,7 @@ export const HomepageRepository = {
   },
 
   async remove(id: string): Promise<void> {
-    const supabase = await db()
+    const supabase = adminDb()
     const { error } = await supabase
       .from('homepage_sections')
       .delete()
@@ -96,7 +103,7 @@ export const HomepageRepository = {
   },
 
   async reorder(ids: string[]): Promise<void> {
-    const supabase = await db()
+    const supabase = adminDb()
     await Promise.all(
       ids.map((id, idx) =>
         supabase

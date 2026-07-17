@@ -12,6 +12,14 @@ export const env = {
     url: requireEnv('NEXT_PUBLIC_SUPABASE_URL'),
     anonKey: requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     serviceRoleKey: requireEnv('SUPABASE_SERVICE_ROLE_KEY'),
+    // Used to sign short-lived JWTs so authenticated (logged-in-user) Supabase requests carry
+    // a real auth.uid() for RLS — see src/lib/db/authenticatedClient.ts. From the Supabase
+    // dashboard: Settings -> API -> JWT Settings.
+    jwtSecret: requireEnv('SUPABASE_JWT_SECRET'),
+  },
+  admin: {
+    email: requireEnv('ADMIN_EMAIL'),
+    password: requireEnv('ADMIN_PASSWORD'),
   },
   r2: {
     endpoint: process.env.CLOUDFLARE_R2_ENDPOINT ?? '',

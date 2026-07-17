@@ -32,6 +32,10 @@ export default function RootLayout({
       className={`${jakarta.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Open the connection to the image CDN before the first product image is requested */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+      </head>
       <body className="min-h-full flex flex-col font-body" suppressHydrationWarning>
         {children}
         <Toaster />

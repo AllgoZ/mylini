@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { ShieldCheck, Truck, Undo2, Heart, Minus, Plus, Search, Ruler, X as XIcon, ShoppingCart, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ProductWithVariants, ProductSummary } from '@/types/product';
@@ -11,7 +11,16 @@ import { useWishStore } from '@/store/useWishStore';
 import { adaptProductListItem } from '@/lib/utils/adapters';
 import { getDetailImageUrl, getThumbImageUrl } from '@/lib/utils/imageUrl';
 import { ProductCard } from '@/components/shop/ProductCard';
+import { FadeImage } from '@/components/ui/FadeImage';
 import { toast } from 'sonner';
+import DOMPurify from 'isomorphic-dompurify';
+
+// Only rendered after a user click, and only for the subset of products that have a size
+// chart — no reason to ship it in the initial product-page bundle.
+const SizeChartModal = dynamic(
+  () => import('@/components/product/SizeChartModal').then((m) => m.SizeChartModal),
+  { ssr: false }
+);
 
 interface Props {
   product: ProductWithVariants;
@@ -33,14 +42,18 @@ export function ProductDetailClient({ product }: Props) {
   useEffect(() => {
     const categorySlug = product.category?.slug;
     if (!categorySlug) return;
+    // Guard against a stale response landing after a fast client-side nav to another product
+    let ignore = false;
     fetch(`/api/products?category=${categorySlug}&exclude=${product.id}&limit=8&sort=newest`)
       .then(r => r.json())
       .then(json => {
+        if (ignore) return;
         if (json.data?.items) {
           setRelatedProducts(json.data.items.map((p: any) => adaptProductListItem(p)));
         }
       })
       .catch(() => {});
+    return () => { ignore = true; };
   }, [product.id, product.category?.slug]);
 
   // Auto-dismiss "just added" bar after 4s
@@ -74,9 +87,30 @@ export function ProductDetailClient({ product }: Props) {
   const inStock = (inventory?.stock_available ?? 0) > 0;
   const lowStock = inStock && (inventory?.stock_available ?? 0) <= (inventory?.low_stock_threshold ?? 2);
 
-  const images = product.images.length > 0
-    ? product.images.sort((a, b) => a.sort_order - b.sort_order)
-    : [];
+  const images = useMemo(
+    () => (product.images.length > 0 ? [...product.images].sort((a, b) => a.sort_order - b.sort_order) : []),
+    [product.images]
+  );
+
+  // Defense-in-depth on top of save-time sanitization in ProductService — protects any
+  // data that entered the DB before that fix shipped, or via a future save-path bypass.
+  const sanitizedDescription = useMemo(
+    () => (product.description ? DOMPurify.sanitize(product.description) : ''),
+    [product.description]
+  );
+
+  // Warm the browser cache for the next/previous gallery image so clicking a thumbnail
+  // (or swiping) resolves instantly instead of showing a flash while it decodes.
+  useEffect(() => {
+    if (images.length < 2) return;
+    const preload = (idx: number) => {
+      if (idx < 0 || idx >= images.length) return;
+      const img = new Image();
+      img.src = getDetailImageUrl(images[idx].public_url);
+    };
+    preload(activeImage + 1);
+    preload(activeImage - 1);
+  }, [activeImage, images]);
 
   // Sync dot indicator with mobile scroll position
   const handleMobileScroll = useCallback(() => {
@@ -165,7 +199,7 @@ export function ProductDetailClient({ product }: Props) {
                     className="snap-start shrink-0 w-full aspect-[3/4] relative bg-surface-2"
                     style={{ scrollSnapAlign: 'start' }}
                   >
-                    <Image
+                    <FadeImage
                       src={getDetailImageUrl(img.public_url)}
                       alt={`${product.name} — image ${idx + 1}`}
                       fill
@@ -215,7 +249,7 @@ export function ProductDetailClient({ product }: Props) {
                         : 'border-transparent opacity-70 hover:opacity-100 hover:border-clay-soft'
                     }`}
                   >
-                    <Image
+                    <FadeImage
                       src={getThumbImageUrl(img.public_url)}
                       alt={`Thumbnail ${idx + 1}`}
                       fill
@@ -233,7 +267,7 @@ export function ProductDetailClient({ product }: Props) {
               onClick={() => setIsZoomed(!isZoomed)}
             >
               {images.length > 0 ? (
-                <Image
+                <FadeImage
                   src={getDetailImageUrl(images[activeImage]?.public_url ?? images[0].public_url)}
                   alt={`${product.name} image ${activeImage + 1}`}
                   fill
@@ -362,13 +396,13 @@ export function ProductDetailClient({ product }: Props) {
           <div className="flex items-center gap-4 mb-5.5">
             <span className="text-[0.85rem] font-bold text-text">Quantity</span>
             <div className="flex items-center border-[1.5px] border-border rounded-md overflow-hidden">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
                 <Minus size={16} />
               </button>
               <div className="w-11 text-center font-bold text-[0.95rem] text-text border-x-[1.5px] border-border leading-[40px] select-none">
                 {quantity}
               </div>
-              <button onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-10 h-10 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
+              <button onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-10 h-10 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
                 <Plus size={16} />
               </button>
             </div>
@@ -404,7 +438,7 @@ export function ProductDetailClient({ product }: Props) {
               <h3 className="text-[0.75rem] font-bold text-ink mb-3 uppercase tracking-[0.06em]">Description</h3>
               <div
                 className="text-[0.9rem] text-text-mid leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_strong]:font-bold [&_em]:italic [&_h1]:text-lg [&_h1]:font-bold [&_h2]:font-bold [&_p]:mb-2"
-                dangerouslySetInnerHTML={{ __html: product.description }}
+                dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
               />
             </div>
           )}
@@ -426,7 +460,10 @@ export function ProductDetailClient({ product }: Props) {
             )}
           </div>
           {/* Mobile: horizontal scroll; Desktop: grid */}
-          <div className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 md:grid md:grid-cols-4 md:overflow-visible md:pb-0">
+          <div
+            className="flex gap-4 overflow-x-auto scrollbar-none snap-x snap-mandatory pb-2 md:grid md:grid-cols-4 md:overflow-visible md:pb-0"
+            style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
+          >
             {relatedProducts.slice(0, 8).map((p, idx) => (
               <div key={p.id} className="snap-start shrink-0 w-[160px] sm:w-[190px] md:w-auto">
                 <ProductCard product={p} delay={idx * 0.06} />
@@ -437,52 +474,11 @@ export function ProductDetailClient({ product }: Props) {
       )}
 
       {/* Size Chart Overlay */}
-      {sizeChartOpen && (product as any).size_chart_url && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-ink/70 backdrop-blur-sm"
-          onClick={() => setSizeChartOpen(false)}
-        >
-          <div
-            className="relative bg-canvas rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.35)] max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border-soft">
-              <div className="flex items-center gap-2">
-                <Ruler size={16} className="text-clay" />
-                <span className="font-bold text-[0.95rem] text-ink">Size Chart</span>
-              </div>
-              <button
-                onClick={() => setSizeChartOpen(false)}
-                className="w-8 h-8 rounded-full bg-surface hover:bg-surface-2 flex items-center justify-center transition-colors"
-              >
-                <XIcon size={16} className="text-text-mid" />
-              </button>
-            </div>
-            <div className="overflow-auto p-4 flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={(product as any).size_chart_url}
-                alt="Size chart"
-                className="max-w-full rounded-xl object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Sticky Add-to-Cart */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-canvas/90 backdrop-blur-xl border-t border-border-brand p-4 px-5 flex items-center justify-between z-50 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]">
-        <div className="font-body text-[1.4rem] font-extrabold text-ink tracking-tight">
-          ₹{(effectivePrice * quantity).toLocaleString('en-IN')}
-        </div>
-        <button
-          onClick={handleAddToCart}
-          disabled={!inStock || adding || !selectedVariant}
-          className="bg-clay-deep text-white px-8 py-3 rounded-lg font-bold text-[0.9rem] shadow-s2 active:scale-95 transition-transform disabled:opacity-60"
-        >
-          {adding ? 'Adding...' : 'Add to Cart'}
-        </button>
-      </div>
+      <SizeChartModal
+        open={sizeChartOpen}
+        sizeChartUrl={(product as any).size_chart_url ?? ''}
+        onClose={() => setSizeChartOpen(false)}
+      />
 
       {/* View Cart Bar — appears after successful add */}
       <AnimatePresence>
@@ -492,7 +488,7 @@ export function ProductDetailClient({ product }: Props) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            className="fixed bottom-[76px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
+            className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
           >
             <div className="w-8 h-8 bg-sage rounded-full flex items-center justify-center shrink-0">
               <ShoppingCart size={15} />

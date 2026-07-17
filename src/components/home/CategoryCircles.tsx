@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import Image from 'next/image';
+import { FadeImage } from '@/components/ui/FadeImage';
 import { getCategories } from '@/lib/api/categories';
 import { HomepageService } from '@/lib/services/homepageService';
 
@@ -71,7 +71,10 @@ export async function CategoryCircles() {
         </Link>
       </div>
 
-      <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-none">
+      <div
+        className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-none"
+        style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
+      >
         {display.map((item, i) => {
           const gradient = FALLBACK_GRADIENT[item.slug ?? ''] ?? DEFAULT_GRADIENTS[i % DEFAULT_GRADIENTS.length];
           const emoji = FALLBACK_EMOJI[item.slug ?? ''] ?? DEFAULT_EMOJIS[i % DEFAULT_EMOJIS.length];
@@ -92,7 +95,7 @@ export async function CategoryCircles() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none z-10" />
                 {item.image_url ? (
                   <div className="relative w-full h-full">
-                    <Image
+                    <FadeImage
                       src={item.image_url}
                       alt={item.name}
                       fill

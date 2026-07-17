@@ -2,10 +2,10 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Minus, Plus, ArrowRight, ShieldCheck, Truck, ArrowLeft } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
+import { FadeImage } from '@/components/ui/FadeImage';
 import { cartItemPrice } from '@/types/cart';
 import { toast } from 'sonner';
 
@@ -101,7 +101,7 @@ export default function CartPage() {
                     >
                       <Link href={slug ? `/product/${slug}` : '#'} className="shrink-0 w-20 h-24 sm:w-28 sm:h-36 bg-surface-2 rounded-xl overflow-hidden relative border border-border">
                         {image ? (
-                          <Image src={image} alt={name} fill className="object-cover" sizes="(max-width:640px) 80px, 112px" />
+                          <FadeImage src={image} alt={name} fill className="object-cover" sizes="(max-width:640px) 80px, 112px" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#E8C9B8] to-[#B87050]" />
                         )}
@@ -121,7 +121,7 @@ export default function CartPage() {
                           </div>
                           <button
                             onClick={() => handleRemove(variantId)}
-                            className="text-text-light hover:text-destructive transition-colors shrink-0 h-fit mt-0.5"
+                            className="text-text-light hover:text-destructive transition-all shrink-0 h-fit mt-0.5 active:scale-90"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -129,11 +129,11 @@ export default function CartPage() {
 
                         <div className="flex items-center justify-between mt-3 gap-2">
                           <div className="flex items-center border-[1.5px] border-border rounded-lg overflow-hidden bg-surface">
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
+                            <button onClick={() => handleUpdateQty(variantId, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
                               <Minus size={13} />
                             </button>
                             <div className="w-8 text-center font-bold text-[0.85rem] text-text select-none">{item.quantity}</div>
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-colors hover:bg-surface-2 hover:text-clay">
+                            <button onClick={() => handleUpdateQty(variantId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
                               <Plus size={13} />
                             </button>
                           </div>

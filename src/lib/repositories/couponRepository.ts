@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
+import { createAuthenticatedClient } from '@/lib/db/authenticatedClient'
 import type { Coupon } from '@/types/coupon'
 import type { Database } from '@/lib/db/generated/database.types'
 
@@ -36,7 +38,7 @@ export const CouponRepository = {
   },
 
   async hasUserUsed(couponId: string, userId: string): Promise<boolean> {
-    const supabase = await createClient()
+    const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('coupon_usage')
       .select('id')
@@ -49,7 +51,7 @@ export const CouponRepository = {
   },
 
   async findAll(filters: { page?: number; limit?: number; search?: string }): Promise<{ coupons: Coupon[]; count: number }> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const page = filters.page ?? 1
     const limit = filters.limit ?? 30
     const from = (page - 1) * limit
@@ -70,7 +72,7 @@ export const CouponRepository = {
   },
 
   async create(data: CouponInsert): Promise<Coupon> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data: coupon, error } = await supabase
       .from('coupons')
       .insert({ ...data, code: (data.code as string).toUpperCase() } as any)
@@ -82,7 +84,7 @@ export const CouponRepository = {
   },
 
   async update(couponId: string, data: CouponUpdate): Promise<Coupon> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data: coupon, error } = await (supabase as any)
       .from('coupons')
       .update({ ...data, updated_at: new Date().toISOString() })
@@ -95,7 +97,7 @@ export const CouponRepository = {
   },
 
   async disable(couponId: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await (supabase as any)
       .from('coupons')
       .update({ is_active: false })

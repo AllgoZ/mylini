@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
+import { createAuthenticatedClient } from '@/lib/db/authenticatedClient'
 import type { User, Address, CreateAddressInput } from '@/types/user'
 
 export type CustomerWithStats = User & {
@@ -7,9 +9,14 @@ export type CustomerWithStats = User & {
   last_order_at: string | null
 }
 
+// `users` carries no anon/authenticated grants (migration 031) — identity-bootstrap
+// lookups (phone login, session validation) use the service-role client, same as
+// authService.ts. Requires migration 034 (service_role needs an explicit table grant —
+// BYPASSRLS alone doesn't give it one, which is what broke login right after 031 shipped
+// without it).
 export const UserRepository = {
   async findByPhone(phone: string): Promise<User | null> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data } = await supabase
       .from('users')
       .select('*')
@@ -21,7 +28,7 @@ export const UserRepository = {
   },
 
   async findById(id: string): Promise<User | null> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data } = await supabase
       .from('users')
       .select('*')
@@ -33,7 +40,7 @@ export const UserRepository = {
   },
 
   async createOrUpdateByPhone(phone: string): Promise<User> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // Try to find existing user
     const existing = await this.findByPhone(phone)
@@ -62,7 +69,7 @@ export const UserRepository = {
   },
 
   async updateLastLogin(userId: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase
       .from('users')
       .update({ last_login_at: new Date().toISOString() })
@@ -72,6 +79,8 @@ export const UserRepository = {
   },
 
   async isAdmin(userId: string): Promise<boolean> {
+    // Dead code — admin auth is stateless (HMAC token, see AGENTS.md) and never looks
+    // up user_roles. Left unused rather than removed (out of scope for this phase).
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('user_roles')
@@ -86,7 +95,7 @@ export const UserRepository = {
   },
 
   async createAddress(input: CreateAddressInput): Promise<Address> {
-    const supabase = await createClient()
+    const supabase = await createAuthenticatedClient(input.user_id)
     const { data, error } = await supabase
       .from('addresses')
       .insert({
@@ -108,7 +117,7 @@ export const UserRepository = {
   },
 
   async findAll(filters: { search?: string; page?: number; limit?: number }): Promise<{ users: CustomerWithStats[]; count: number }> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const page = filters.page ?? 1
     const limit = filters.limit ?? 50
     const from = (page - 1) * limit

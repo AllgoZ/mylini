@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
 import { UserRepository } from '@/lib/repositories/userRepository'
 import type { User } from '@/types/user'
 import { randomBytes } from 'crypto'
@@ -15,6 +15,12 @@ export interface Session {
 
 const SESSION_DURATION_DAYS = 7
 
+// `sessions` (and `users`, via UserRepository's identity methods) carry no anon or
+// authenticated-role grants (migration 031) — an unrestricted anon SELECT on `sessions`
+// would let anyone dump every session token in the table and hijack any logged-in user.
+// This is pre-auth identity-bootstrap machinery, so it uses the service-role client.
+// Requires migration 034 (service_role needs an explicit table grant on top of RLS —
+// BYPASSRLS alone doesn't give it one).
 export const AuthService = {
   /**
    * Authenticate user by phone number.
@@ -25,27 +31,17 @@ export const AuthService = {
     userAgent?: string,
     ipAddress?: string
   ): Promise<{ user: User; session: Session }> {
-    // Create or get user by phone
     const user = await UserRepository.createOrUpdateByPhone(phone)
-
-    // Create session
     const session = await this.createSession(user.id, userAgent, ipAddress)
-
     return { user, session }
   },
 
-  /**
-   * Create new session for user.
-   * Returns session with token to be stored in httpOnly cookie.
-   */
   async createSession(
     userId: string,
     userAgent?: string,
     ipAddress?: string
   ): Promise<Session> {
-    const supabase = await createClient()
-
-    // Generate secure random token (32 bytes = 64 hex chars)
+    const supabase = createAdminClient()
     const sessionToken = randomBytes(32).toString('hex')
 
     const now = new Date()
@@ -72,9 +68,8 @@ export const AuthService = {
    * Returns user if session is valid and not expired, null otherwise.
    */
   async validateSession(sessionToken: string): Promise<User | null> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
-    // Find session that hasn't expired
     const { data: session, error } = await supabase
       .from('sessions')
       .select('user_id, expires_at')
@@ -84,7 +79,6 @@ export const AuthService = {
 
     if (error || !session) return null
 
-    // Get user
     const user = await UserRepository.findById(session.user_id)
     return user
   },
@@ -93,7 +87,7 @@ export const AuthService = {
    * Delete session (logout).
    */
   async logout(sessionToken: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { error } = await supabase
       .from('sessions')
@@ -107,7 +101,7 @@ export const AuthService = {
    * Get session by token (internal use).
    */
   async getSession(sessionToken: string): Promise<Session | null> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { data } = await supabase
       .from('sessions')

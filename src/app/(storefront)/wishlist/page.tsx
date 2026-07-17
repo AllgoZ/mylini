@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, ShoppingBag, Trash2, ArrowLeft, Phone } from 'lucide-react';
 import { useWishStore } from '@/store/useWishStore';
@@ -10,6 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from '@/store/useCartStore';
 import { toast } from 'sonner';
 import { getCardImageUrl } from '@/lib/utils/imageUrl';
+import { FadeImage } from '@/components/ui/FadeImage';
 
 export default function WishlistPage() {
   const { user, loading: authLoading, openLoginModal } = useAuthStore();
@@ -115,7 +115,7 @@ export default function WishlistPage() {
                   >
                     <Link href={`/product/${product.slug}`} className="relative aspect-[3/4] bg-surface-2 overflow-hidden flex items-end justify-center">
                       {product.image ? (
-                        <Image
+                        <FadeImage
                           src={getCardImageUrl(product.image)}
                           alt={product.name}
                           fill
@@ -127,7 +127,7 @@ export default function WishlistPage() {
                       )}
                       <button
                         onClick={(e) => { e.preventDefault(); handleRemove(product); }}
-                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-text-light hover:text-destructive hover:bg-white hover:scale-110 shadow-s1 transition-all z-10"
+                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-text-light hover:text-destructive hover:bg-white hover:scale-110 active:scale-95 shadow-s1 transition-all z-10"
                       >
                         <Trash2 size={15} />
                       </button>

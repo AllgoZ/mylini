@@ -1,6 +1,7 @@
 import { ProductRepository } from '@/lib/repositories/productRepository'
 import { storageProvider } from '@/lib/storage'
 import { AppError } from '@/lib/utils/errors'
+import { sanitizeProductDescription } from '@/lib/utils/sanitizeHtml'
 import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
 
@@ -55,10 +56,12 @@ export const ProductService = {
         'SLUG_CONFLICT'
       )
     }
+    if (data.description) data.description = sanitizeProductDescription(data.description)
     return ProductRepository.create(data)
   },
 
   async update(id: string, data: ProductUpdate): Promise<void> {
+    if (data.description) data.description = sanitizeProductDescription(data.description)
     return ProductRepository.update(id, data)
   },
 

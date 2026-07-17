@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
 import { NotFoundError } from '@/lib/utils/errors'
 import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, VariantSnapshot } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
@@ -263,7 +264,7 @@ export const ProductRepository = {
   // ─── Admin methods ───────────────────────────────────────────────────────────
 
   async findAllForAdmin(filters: { search?: string; status?: string; category?: string; page?: number; limit?: number }): Promise<PaginatedProducts> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const page = filters.page ?? 1
     const limit = filters.limit ?? 30
     const from = (page - 1) * limit
@@ -298,7 +299,7 @@ export const ProductRepository = {
   },
 
   async findByIdForAdmin(id: string): Promise<ProductWithVariants> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase
       .from('products')
       .select(DETAIL_SELECT_LEFT)
@@ -312,7 +313,7 @@ export const ProductRepository = {
   },
 
   async slugExists(slug: string): Promise<boolean> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data } = await supabase
       .from('products')
       .select('id')
@@ -323,7 +324,7 @@ export const ProductRepository = {
   },
 
   async create(data: ProductInsert): Promise<{ id: string; slug: string }> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data: product, error } = await supabase
       .from('products')
       .insert(data as any)
@@ -335,7 +336,7 @@ export const ProductRepository = {
   },
 
   async update(id: string, data: ProductUpdate): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase
       .from('products')
       .update({ ...data, updated_at: new Date().toISOString() } as any)
@@ -345,7 +346,7 @@ export const ProductRepository = {
   },
 
   async softDelete(id: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await (supabase as any)
       .from('products')
       .update({ deleted_at: new Date().toISOString(), status: 'archived' })
@@ -355,7 +356,7 @@ export const ProductRepository = {
   },
 
   async createVariant(data: VariantInsert & { initial_stock?: number }): Promise<{ id: string }> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { initial_stock = 0, ...variantData } = data as any
     const { data: variant, error } = await supabase
       .from('product_variants')
@@ -375,7 +376,7 @@ export const ProductRepository = {
   },
 
   async updateVariant(variantId: string, data: VariantUpdate): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase
       .from('product_variants')
       .update({ ...data, updated_at: new Date().toISOString() } as any)
@@ -385,7 +386,7 @@ export const ProductRepository = {
   },
 
   async softDeleteVariant(variantId: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await (supabase as any)
       .from('product_variants')
       .update({ deleted_at: new Date().toISOString(), is_active: false })
@@ -395,13 +396,13 @@ export const ProductRepository = {
   },
 
   async addImage(data: ImageInsert): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase.from('product_images').insert(data as any)
     if (error) throw new Error(error.message)
   },
 
   async findImageById(imageId: string): Promise<{ storage_key: string; storage_provider: string } | null> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data } = await supabase
       .from('product_images')
       .select('storage_key, storage_provider')
@@ -411,13 +412,13 @@ export const ProductRepository = {
   },
 
   async removeImage(imageId: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase.from('product_images').delete().eq('id', imageId)
     if (error) throw new Error(error.message)
   },
 
   async updateImage(imageId: string, data: { sort_order?: number; is_primary?: boolean; alt_text?: string }): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     // If setting as primary, clear other primaries for this product first
     if (data.is_primary) {
       const { data: img } = await supabase.from('product_images').select('product_id').eq('id', imageId).single()
@@ -430,7 +431,7 @@ export const ProductRepository = {
   },
 
   async replaceAttributes(productId: string, attributes: { key: string; value: string }[]): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error: delError } = await supabase.from('product_attributes').delete().eq('product_id', productId)
     if (delError) throw new Error(delError.message)
     if (attributes.length === 0) return
@@ -440,7 +441,7 @@ export const ProductRepository = {
   },
 
   async deleteAttribute(attributeId: string): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase.from('product_attributes').delete().eq('id', attributeId)
     if (error) throw new Error(error.message)
   },

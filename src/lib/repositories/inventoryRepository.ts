@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
 import { NotFoundError } from '@/lib/utils/errors'
 import type { InventoryReason } from '@/lib/constants/inventoryReasons'
 import type { Database } from '@/lib/db/generated/database.types'
@@ -46,7 +47,7 @@ export const InventoryRepository = {
     reason: InventoryReason,
     createdBy?: string
   ): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await supabase.from('inventory_logs').insert({
       variant_id: variantId,
       old_stock: oldStock,
@@ -59,7 +60,7 @@ export const InventoryRepository = {
   },
 
   async findAll(): Promise<AdminInventoryRow[]> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase
       .from('inventory')
       .select(`
@@ -95,7 +96,7 @@ export const InventoryRepository = {
   },
 
   async setStock(variantId: string, newStock: number): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await (supabase as any)
       .from('inventory')
       .update({ stock_available: newStock })
@@ -105,7 +106,7 @@ export const InventoryRepository = {
   },
 
   async updateSettings(variantId: string, settings: { inventory_tracked?: boolean; sell_when_out_of_stock?: boolean; low_stock_threshold?: number }): Promise<void> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { error } = await (supabase as any)
       .from('inventory')
       .update({ ...settings, updated_at: new Date().toISOString() })

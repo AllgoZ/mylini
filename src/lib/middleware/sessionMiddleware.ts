@@ -1,4 +1,7 @@
 import { AuthService } from '@/lib/services/authService'
+import { errorResponse } from '@/lib/utils/apiResponse'
+import { AppError } from '@/lib/utils/errors'
+import { captureError } from '@/lib/utils/sentry'
 import type { User } from '@/types/user'
 
 export interface SessionContext {
@@ -30,19 +33,16 @@ export function requireSession(handler: (req: Request, ctx: SessionContext) => P
       const session = await validateSessionMiddleware(request)
 
       if (!session) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized', code: 'SESSION_INVALID' }),
-          { status: 401, headers: { 'Content-Type': 'application/json' } }
-        )
+        // Same { data, error, status } shape as every other route's errorResponse() —
+        // was previously a hand-rolled { error, code } shape, inconsistent with the rest
+        // of the API.
+        return errorResponse(new AppError('Unauthorized', 401, 'SESSION_INVALID'))
       }
 
       return await handler(request, session)
-    } catch (err: any) {
-      console.error('[requireSession] unhandled error:', err)
-      return new Response(
-        JSON.stringify({ error: err?.message ?? 'Internal server error' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      )
+    } catch (err: unknown) {
+      captureError(err, { source: 'requireSession' })
+      return errorResponse(err)
     }
   }
 }

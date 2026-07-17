@@ -1,60 +1,29 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AdminTopBar } from '@/components/admin/AdminTopBar'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const hydrate = useAuthStore((s) => s.hydrate)
-  const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [adminVerified, setAdminVerified] = useState(false)
-  const [checking, setChecking] = useState(true)
 
   const isLoginPage = pathname === '/admin/login'
 
+  // Auth itself is enforced server-side now — src/proxy.ts verifies the admin_token
+  // cookie and redirects unauthenticated requests to /admin/login before this component
+  // ever renders, so the client-side fetch('/api/admin/stats')-then-redirect check that
+  // used to live here is gone (it was pure overhead once the server-side gate exists).
   useEffect(() => {
-    // Login page needs no verification — just render it
-    if (isLoginPage) {
-      setChecking(false)
-      return
-    }
-
-    // Directly verify admin session via API — no dependency on useAuthStore.loading
-    // (AuthProvider lives in the storefront layout, not here)
-    fetch('/api/admin/stats', { credentials: 'include' })
-      .then((r) => {
-        if (r.ok) {
-          setAdminVerified(true)
-          // Hydrate auth store so AdminTopBar can show user info
-          hydrate()
-        } else {
-          router.replace('/admin/login')
-        }
-      })
-      .catch(() => router.replace('/admin/login'))
-      .finally(() => setChecking(false))
-  }, [isLoginPage, router, hydrate])
+    if (!isLoginPage) hydrate()
+  }, [isLoginPage, hydrate])
 
   if (isLoginPage) {
     return <>{children}</>
   }
-
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-[#C4654A]/30 border-t-[#C4654A] rounded-full animate-spin" />
-          <span className="text-[0.85rem] text-[#78716C] font-medium">Loading…</span>
-        </div>
-      </div>
-    )
-  }
-
-  if (!adminVerified) return null
 
   return (
     <div className="admin-root min-h-screen bg-[#FAFAF9] flex overflow-hidden">

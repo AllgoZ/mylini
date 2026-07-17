@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
+import { createAuthenticatedClient } from '@/lib/db/authenticatedClient'
 import { NotFoundError, ValidationError } from '@/lib/utils/errors'
 import type { Order, OrderWithItems, OrderStatus, OrderSummary, AdminOrderSummary } from '@/types/order'
 import type { Database } from '@/lib/db/generated/database.types'
@@ -88,8 +90,29 @@ export const OrderRepository = {
     return data as Order
   },
 
+  // Admin-only read (no ownership scoping) — uses the service-role client.
   async findById(id: string): Promise<OrderWithItems> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(*),
+        address:addresses!inner(*),
+        coupon:coupons(id, code, type, value)
+      `)
+      .eq('id', id)
+      .single()
+
+    if (error || !data) throw new NotFoundError(`Order '${id}'`)
+    return data as unknown as OrderWithItems
+  },
+
+  // Customer read, scoped to the caller — uses the authenticated (JWT) client, so RLS
+  // (auth.uid() = user_id) makes another user's order invisible even before the
+  // app-layer ownership check in OrderService.getByIdForUser runs.
+  async findByIdForUser(id: string, userId: string): Promise<OrderWithItems> {
+    const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('orders')
       .select(`
@@ -106,7 +129,7 @@ export const OrderRepository = {
   },
 
   async findByUserId(userId: string): Promise<OrderSummary[]> {
-    const supabase = await createClient()
+    const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('orders')
       .select('id, status, subtotal, discount, total, created_at, tracking_number, tracking_url, items:order_items(quantity, product_name_snapshot, image_snapshot)')
@@ -136,7 +159,7 @@ export const OrderRepository = {
     limit?: number
     search?: string
   }): Promise<{ orders: AdminOrderRow[]; count: number }> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const page = filters.page ?? 1
     const limit = filters.limit ?? 30
     const from = (page - 1) * limit
@@ -175,7 +198,7 @@ export const OrderRepository = {
   },
 
   async updateStatus(id: string, status: OrderStatus): Promise<Order> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('orders')
@@ -189,7 +212,7 @@ export const OrderRepository = {
   },
 
   async updateTracking(id: string, tracking_number: string | null, tracking_url: string | null): Promise<Order> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('orders')

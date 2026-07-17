@@ -1,6 +1,9 @@
 import { OrderRepository, type AdminOrderRow } from '@/lib/repositories/orderRepository'
 import { CouponService } from './couponService'
 import { ProductRepository } from '@/lib/repositories/productRepository'
+import { UserRepository } from '@/lib/repositories/userRepository'
+import { sendOrderPlacedNotification } from '@/lib/integrations/resend/client'
+import { captureError } from '@/lib/utils/sentry'
 import { AppError, ValidationError } from '@/lib/utils/errors'
 import type { CreateOrderInput, Order, OrderSummary, OrderStatus, OrderWithItems } from '@/types/order'
 import type { VariantSnapshot } from '@/types/product'
@@ -60,7 +63,7 @@ export const OrderService = {
     // stock validation, race-condition guarding, and rollback-on-failure all happen
     // inside create_order_transactional (migration 030) instead of a sequence of
     // separate round trips here.
-    return OrderRepository.createTransactional({
+    const order = await OrderRepository.createTransactional({
       user_id,
       address_id,
       coupon_id: couponId ?? null,
@@ -70,6 +73,37 @@ export const OrderService = {
       notes: notes ?? null,
       items: orderItems,
     })
+
+    // 6. Notify the store owner (ORDER_NOTIFICATION_EMAIL) that a new order came in. The
+    // order is already committed above — awaited so it isn't dropped by a serverless
+    // function freezing post-response, but any failure here must never fail checkout.
+    try {
+      const [fullOrder, customer] = await Promise.all([
+        OrderRepository.findById(order.id),
+        UserRepository.findById(user_id),
+      ])
+      await sendOrderPlacedNotification({
+        orderId: fullOrder.id,
+        subtotal: fullOrder.subtotal,
+        discount: fullOrder.discount,
+        total: fullOrder.total,
+        customerName: customer?.name ?? null,
+        customerPhone: customer?.phone ?? '',
+        customerEmail: customer?.email ?? null,
+        address: fullOrder.address,
+        items: fullOrder.items.map((item) => ({
+          productName: item.product_name_snapshot,
+          variant: item.variant_snapshot,
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          totalPrice: item.total_price,
+        })),
+      })
+    } catch (err) {
+      captureError(err, { source: 'OrderService.create.notify', orderId: order.id })
+    }
+
+    return order
   },
 
   async getByUserId(userId: string): Promise<OrderSummary[]> {
@@ -93,7 +127,9 @@ export const OrderService = {
   },
 
   async getByIdForUser(orderId: string, userId: string): Promise<OrderWithItems> {
-    const order = await OrderRepository.findById(orderId)
+    // RLS (auth.uid() = user_id) already scopes this to the caller's own orders — the
+    // manual check below is a second, independent layer, not the only thing enforcing it.
+    const order = await OrderRepository.findByIdForUser(orderId, userId)
     if ((order as any).user_id !== userId) throw new AppError('Order not found', 404)
     return order
   },

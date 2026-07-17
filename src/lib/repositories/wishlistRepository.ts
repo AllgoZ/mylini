@@ -1,10 +1,11 @@
-import { createClient } from '@/lib/db/server'
+import { createAuthenticatedClient } from '@/lib/db/authenticatedClient'
 import type { ProductSummary } from '@/types/product'
 
+// wishlists/wishlist_items carry only an `auth.uid() = user_id` RLS policy (migration
+// 031) — every method here needs the per-user authenticated client, not the anon one.
 export const WishlistRepository = {
   async findOrCreateByUserId(userId: string): Promise<{ id: string }> {
-    const supabase = await createClient()
-
+    const supabase = await createAuthenticatedClient(userId)
     const { data: existing } = await supabase
       .from('wishlists')
       .select('id')
@@ -24,8 +25,8 @@ export const WishlistRepository = {
     return data
   },
 
-  async getItems(wishlistId: string): Promise<ProductSummary[]> {
-    const supabase = await createClient()
+  async getItems(userId: string, wishlistId: string): Promise<ProductSummary[]> {
+    const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('wishlist_items')
       .select(`
@@ -39,9 +40,11 @@ export const WishlistRepository = {
 
     if (error) throw new Error(error.message)
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data ?? []).map((row: any) => {
       const p = row.product
       const primaryImage =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         p.images?.find((i: any) => i.is_primary)?.public_url ?? p.images?.[0]?.public_url ?? ''
       return {
         id: p.id,
@@ -55,8 +58,8 @@ export const WishlistRepository = {
     })
   },
 
-  async addItem(wishlistId: string, productId: string): Promise<void> {
-    const supabase = await createClient()
+  async addItem(userId: string, wishlistId: string, productId: string): Promise<void> {
+    const supabase = await createAuthenticatedClient(userId)
     const { error } = await supabase
       .from('wishlist_items')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,8 +68,8 @@ export const WishlistRepository = {
     if (error) throw new Error(error.message)
   },
 
-  async removeItem(wishlistId: string, productId: string): Promise<void> {
-    const supabase = await createClient()
+  async removeItem(userId: string, wishlistId: string, productId: string): Promise<void> {
+    const supabase = await createAuthenticatedClient(userId)
     const { error } = await supabase
       .from('wishlist_items')
       .delete()
@@ -76,8 +79,8 @@ export const WishlistRepository = {
     if (error) throw new Error(error.message)
   },
 
-  async hasItem(wishlistId: string, productId: string): Promise<boolean> {
-    const supabase = await createClient()
+  async hasItem(userId: string, wishlistId: string, productId: string): Promise<boolean> {
+    const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('wishlist_items')
       .select('id')

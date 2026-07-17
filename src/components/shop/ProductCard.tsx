@@ -6,7 +6,7 @@ import { Heart } from 'lucide-react';
 import { useWishStore } from '@/store/useWishStore';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import Image from 'next/image';
+import { FadeImage } from '@/components/ui/FadeImage';
 import Link from 'next/link';
 import type { ProductSummary } from '@/types/product';
 import { getCardImageUrl } from '@/lib/utils/imageUrl';
@@ -72,11 +72,12 @@ export function ProductCard({
         <div className="relative aspect-[3/4] bg-surface-2 overflow-hidden">
           {product.images && product.images.length > 0 ? (
             product.images.map((img, idx) => (
-              <Image
+              <FadeImage
                 key={img}
                 src={getCardImageUrl(img)}
                 alt={`${product.name} ${idx + 1}`}
                 fill
+                fadeIn={false}
                 sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 priority={priority && idx === 0}
                 className={cn(
@@ -86,7 +87,7 @@ export function ProductCard({
               />
             ))
           ) : product.image ? (
-            <Image
+            <FadeImage
               src={getCardImageUrl(product.image)}
               alt={product.name}
               fill
@@ -127,7 +128,7 @@ export function ProductCard({
           <button
             onClick={handleWish}
             className={cn(
-              'absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-canvas/85 backdrop-blur-md flex items-center justify-center text-base shadow-s1 z-20 transition-all duration-[--t] ease-[--spring] hover:bg-white/95',
+              'absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-canvas/85 backdrop-blur-md flex items-center justify-center text-base shadow-s1 z-20 transition-all duration-[--t] ease-[--spring] hover:bg-white/95 active:scale-90',
               isWished ? 'opacity-100 scale-100 text-destructive' : 'opacity-0 scale-75 text-text-mid group-hover:opacity-100 group-hover:scale-100'
             )}
           >

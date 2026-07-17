@@ -22,7 +22,7 @@ export function Navbar() {
     // Skip the API call if the store already has cart data (survives route changes)
     if (!useCartStore.getState().cart) fetchCart();
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [fetchCart]);
 

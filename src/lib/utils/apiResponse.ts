@@ -1,5 +1,6 @@
 import { ZodError } from 'zod'
 import { AppError } from './errors'
+import { captureError } from './sentry'
 
 export type ApiResponse<T> = {
   data: T | null
@@ -24,7 +25,7 @@ export function errorResponse(error: unknown): Response {
     return Response.json(body, { status: error.statusCode })
   }
 
-  console.error('[API Error]', error)
+  captureError(error, { source: 'errorResponse' })
   const body: ApiResponse<null> = { data: null, error: 'Internal server error', status: 500 }
   return Response.json(body, { status: 500 })
 }

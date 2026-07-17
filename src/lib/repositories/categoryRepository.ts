@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/db/server'
+import { createAdminClient } from '@/lib/db/admin'
 import { NotFoundError } from '@/lib/utils/errors'
 import type { Category } from '@/types/product'
 
@@ -32,7 +33,7 @@ export const CategoryRepository = {
   },
 
   async create(name: string, slug: string, parentId?: string): Promise<Category> {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase
       .from('categories')
       .insert({ name, slug, is_active: true, sort_order: 0, ...(parentId ? { parent_id: parentId } : {}) } as any)

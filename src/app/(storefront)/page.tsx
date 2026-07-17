@@ -1,7 +1,7 @@
 export const revalidate = 60;
 
 import { HeroBanner } from '@/components/home/HeroBanner';
-import Image from 'next/image';
+import { FadeImage } from '@/components/ui/FadeImage';
 import { OfferStrip } from '@/components/home/OfferStrip';
 import { CategoryCircles } from '@/components/home/CategoryCircles';
 import { ProductCard } from '@/components/shop/ProductCard';
@@ -88,7 +88,7 @@ export default async function Home() {
                 className="group relative rounded-xl overflow-hidden min-h-[220px] flex items-center transition-all duration-[--t] ease-[--spring] hover:scale-[1.015] hover:shadow-s4"
               >
                 {block.image_url && (
-                  <Image src={block.image_url} alt={block.title ?? ''} fill priority={i < 2} className="object-cover transition-transform duration-[0.8s] group-hover:scale-105" />
+                  <FadeImage src={block.image_url} alt={block.title ?? ''} fill priority={i < 2} className="object-cover transition-transform duration-[0.8s] group-hover:scale-105" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent" />
                 <div className="relative z-10 p-7 md:p-8">
