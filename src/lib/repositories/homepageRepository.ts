@@ -1,10 +1,12 @@
-import { createClient } from '@/lib/db/server'
 import { createAdminClient } from '@/lib/db/admin'
+import { createPublicClient } from '@/lib/db/publicClient'
 import type { HomepageSection, CreateHomepageSectionInput, UpdateHomepageSectionInput, HomepageSectionType } from '@/types/homepage'
 
-// homepage_sections is defined in migration 029 — cast required until types are regenerated
-async function db() {
-  return (await createClient()) as any
+// homepage_sections is defined in migration 029 — cast required until types are regenerated.
+// Public reads use the cookie-free client — server.ts's createClient() calls cookies(),
+// which forces the homepage route fully dynamic and defeats `export const revalidate`.
+function db() {
+  return createPublicClient() as any
 }
 
 // Admin content-management methods (create/update/remove/reorder/findAll) use the

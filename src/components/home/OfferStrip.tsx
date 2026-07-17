@@ -28,7 +28,10 @@ export function OfferStrip() {
   ];
 
   return (
-    <div className="w-full mt-4 px-4 md:px-7 overflow-x-auto scrollbar-none">
+    <div
+      className="w-full mt-4 px-4 md:px-7 overflow-x-auto scrollbar-none snap-x snap-mandatory scroll-smooth"
+      style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
+    >
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -40,7 +43,7 @@ export function OfferStrip() {
           return (
             <div
               key={index}
-              className="flex-shrink-0 w-[calc(100vw-2rem)] md:flex-1 md:w-auto flex items-center gap-2.5 bg-surface border border-border-soft rounded-md p-3 px-4.5 transition-all duration-[--t] ease-[--spring] hover:shadow-s2 hover:-translate-y-px"
+              className="snap-center flex-shrink-0 w-[86vw] sm:w-[360px] md:flex-1 md:w-auto flex items-center gap-2.5 bg-surface border border-border-soft rounded-md p-3 px-4.5 transition-all duration-[--t] ease-[--spring] hover:shadow-s2 hover:-translate-y-px"
             >
               <div className="w-9 h-9 rounded-sm bg-rose-pale flex items-center justify-center shrink-0 text-clay-deep">
                 <Icon size={18} />

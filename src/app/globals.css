@@ -92,6 +92,16 @@
   --color-card: var(--card);
 }
 
+/* Nearly every font-size and spacing value in this codebase is defined in `rem`
+   (600+ text-[Nrem] utilities, plus Tailwind's own spacing/radius scale, which is
+   rem-based by default) — so a single root scale proportionally shrinks text,
+   padding, gaps and radii sitewide, keeping every existing ratio/hierarchy intact
+   instead of a page-by-page rewrite. 15px (93.75%) is a moderate, one-step-down
+   reduction; the smallest existing labels (~0.6rem) stay comfortably above 8px. */
+html {
+  font-size: 93.75%;
+}
+
 :root {
   --background: #F9F4F1;        /* --parchment */
   --foreground: #2B170B;        /* --dark-coffee-2 */

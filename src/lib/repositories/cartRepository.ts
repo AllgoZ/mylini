@@ -6,7 +6,8 @@ const ITEMS_SELECT = `
   variant:product_variants!inner(
     id, sku, color, size, price_override,
     product:products!inner(id, name, slug, base_price, sale_price),
-    images:product_images(public_url, is_primary)
+    images:product_images(public_url, is_primary),
+    inventory(stock_available, low_stock_threshold)
   )
 `
 

@@ -44,7 +44,8 @@ export function PhoneModal() {
       <div className="relative bg-white rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.18)] p-8 w-full max-w-[380px] border border-border-soft">
         <button
           onClick={closeLoginModal}
-          className="absolute top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:bg-surface-2 hover:text-text transition-all"
+          aria-label="Close"
+          className="absolute top-3 right-3 w-11 h-11 rounded-full flex items-center justify-center text-text-light hover:bg-surface-2 hover:text-text transition-all"
         >
           <X size={18} />
         </button>

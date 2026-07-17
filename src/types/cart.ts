@@ -15,6 +15,7 @@ export type CartItem = CartItemRow & {
       sale_price: number | null
     }
     primary_image: string | null
+    inventory: { stock_available: number; low_stock_threshold: number } | null
   }
 }
 

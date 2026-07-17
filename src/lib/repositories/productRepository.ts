@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/db/server'
 import { createAdminClient } from '@/lib/db/admin'
+import { createPublicClient } from '@/lib/db/publicClient'
 import { NotFoundError } from '@/lib/utils/errors'
 import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, VariantSnapshot } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
@@ -58,7 +59,7 @@ const DETAIL_SELECT_LEFT = `
 
 export const ProductRepository = {
   async findAll(filters: ProductFilters): Promise<PaginatedProducts> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20
     const from = (page - 1) * limit
@@ -136,7 +137,7 @@ export const ProductRepository = {
   },
 
   async findBySlug(slug: string): Promise<ProductWithVariants> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data, error } = await supabase
       .from('products')
       .select(DETAIL_SELECT_INNER)
@@ -171,7 +172,7 @@ export const ProductRepository = {
   },
 
   async getFilterMetadata(category?: string): Promise<ProductFilterMetadata> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
 
     // Products in this category (active, not deleted)
     let productIdQuery = supabase

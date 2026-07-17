@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, User, Menu } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, Menu, Package } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { MobileDrawer } from './MobileDrawer';
@@ -77,12 +77,12 @@ export function Navbar() {
           {/* Icon Buttons */}
           <div className="flex items-center gap-1.5 ml-auto">
             {/* Wishlist */}
-            <Link href="/wishlist" className="relative w-10 h-10 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
+            <Link href="/wishlist" className="relative w-11 h-11 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
               <Heart size={20} strokeWidth={1.8} />
             </Link>
 
             {/* Cart with badge */}
-            <Link href="/cart" className="relative w-10 h-10 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
+            <Link href="/cart" className="relative w-11 h-11 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
               <ShoppingBag size={20} strokeWidth={1.8} />
               {isMounted && cartCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-clay text-white text-[0.6rem] font-extrabold flex items-center justify-center border-2 border-canvas">
@@ -91,11 +91,22 @@ export function Navbar() {
               )}
             </Link>
 
+            {/* Orders — quick access, authenticated only */}
+            {isMounted && isAuthenticated && (
+              <Link
+                href="/orders"
+                className="hidden md:flex relative w-11 h-11 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
+                title="My Orders"
+              >
+                <Package size={20} strokeWidth={1.8} />
+              </Link>
+            )}
+
             {/* User — account or login */}
             {isMounted && isAuthenticated ? (
               <Link
                 href="/account"
-                className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-clay-deep transition-all hover:bg-rose-pale"
+                className="hidden md:flex relative w-11 h-11 rounded-sm items-center justify-center text-clay-deep transition-all hover:bg-rose-pale"
                 title={user?.phone ?? 'Account'}
               >
                 <User size={20} strokeWidth={1.8} />
@@ -103,7 +114,7 @@ export function Navbar() {
             ) : (
               <button
                 onClick={handleUserClick}
-                className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
+                className="hidden md:flex relative w-11 h-11 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
                 title="Sign In"
               >
                 <User size={20} strokeWidth={1.8} />
@@ -113,7 +124,8 @@ export function Navbar() {
             {/* Hamburger */}
             <button
               onClick={() => setIsDrawerOpen(true)}
-              className="md:hidden flex flex-col gap-[4.5px] p-2 rounded-xs hover:bg-surface-2 transition-colors"
+              aria-label="Open menu"
+              className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-[4.5px] rounded-xs hover:bg-surface-2 transition-colors"
             >
               <span className="block w-5 h-[1.8px] bg-text-mid rounded-sm" />
               <span className="block w-5 h-[1.8px] bg-text-mid rounded-sm" />

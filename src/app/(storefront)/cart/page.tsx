@@ -19,10 +19,20 @@ export default function CartPage() {
   const total = subtotal + shipping;
   const items = cart?.items ?? [];
 
-  const handleUpdateQty = async (variantId: string, qty: number) => {
+  const handleUpdateQty = async (variantId: string, qty: number, stockAvailable: number | null) => {
     if (qty < 1) return;
+    if (stockAvailable != null && qty > stockAvailable) {
+      toast.error(
+        stockAvailable > 0
+          ? `Only ${stockAvailable} piece${stockAvailable === 1 ? '' : 's'} available.`
+          : 'This item is out of stock.'
+      );
+      return;
+    }
     try { await updateItem(variantId, qty); }
-    catch (e: any) { toast.error(e?.message ?? 'Failed to update'); }
+    catch (e: any) {
+      toast.error(e?.message?.includes('Insufficient stock') ? 'Not enough stock for that quantity.' : (e?.message ?? 'Failed to update'));
+    }
   };
 
   const handleRemove = async (variantId: string) => {
@@ -88,6 +98,10 @@ export default function CartPage() {
                   const variantId = item.variant_id;
                   const price = cartItemPrice(item);
                   const slug = item.variant?.product?.slug ?? '';
+                  const stock = item.variant?.inventory;
+                  const stockAvailable = stock ? stock.stock_available : null;
+                  const atStockCap = stockAvailable != null && item.quantity >= stockAvailable;
+                  const lowStock = stockAvailable != null && stockAvailable <= (stock?.low_stock_threshold ?? 5) && stockAvailable > 0;
 
                   return (
                     <motion.div
@@ -118,10 +132,14 @@ export default function CartPage() {
                                 Size: <span className="text-ink font-bold">{size}</span>
                               </p>
                             )}
+                            {lowStock && (
+                              <p className="text-[0.72rem] text-destructive font-bold mt-0.5">Only {stockAvailable} left</p>
+                            )}
                           </div>
                           <button
                             onClick={() => handleRemove(variantId)}
-                            className="text-text-light hover:text-destructive transition-all shrink-0 h-fit mt-0.5 active:scale-90"
+                            aria-label="Remove item"
+                            className="text-text-light hover:text-destructive transition-all shrink-0 active:scale-90 p-2.5 -m-2.5"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -129,11 +147,19 @@ export default function CartPage() {
 
                         <div className="flex items-center justify-between mt-3 gap-2">
                           <div className="flex items-center border-[1.5px] border-border rounded-lg overflow-hidden bg-surface">
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
+                            <button
+                              onClick={() => handleUpdateQty(variantId, item.quantity - 1, stockAvailable)}
+                              disabled={item.quantity <= 1}
+                              className="w-11 h-11 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
                               <Minus size={13} />
                             </button>
                             <div className="w-8 text-center font-bold text-[0.85rem] text-text select-none">{item.quantity}</div>
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
+                            <button
+                              onClick={() => handleUpdateQty(variantId, item.quantity + 1, stockAvailable)}
+                              disabled={atStockCap}
+                              className="w-11 h-11 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
                               <Plus size={13} />
                             </button>
                           </div>

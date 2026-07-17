@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/db/server'
 import { createAdminClient } from '@/lib/db/admin'
+import { createPublicClient } from '@/lib/db/publicClient'
 import { NotFoundError } from '@/lib/utils/errors'
 import type { Category } from '@/types/product'
 
@@ -7,7 +7,7 @@ export type CategoryTree = Category & { children: CategoryTree[] }
 
 export const CategoryRepository = {
   async findAll(): Promise<Category[]> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data, error } = await supabase
       .from('categories')
       .select('id, name, slug, parent_id, is_active, sort_order')
@@ -20,7 +20,7 @@ export const CategoryRepository = {
   },
 
   async findBySlug(slug: string): Promise<Category> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data, error } = await supabase
       .from('categories')
       .select('id, name, slug, parent_id, is_active, sort_order')

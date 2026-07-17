@@ -116,6 +116,42 @@ export const UserRepository = {
     return data as unknown as Address
   },
 
+  async findAddressesByUserId(userId: string): Promise<Address[]> {
+    const supabase = await createAuthenticatedClient(userId)
+    const { data, error } = await supabase
+      .from('addresses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: false })
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as unknown as Address[]
+  },
+
+  async updateAddress(id: string, userId: string, patch: Partial<Omit<CreateAddressInput, 'user_id'>>): Promise<Address> {
+    const supabase = await createAuthenticatedClient(userId)
+
+    // Only one default address per user — clear the others first when this one is
+    // being promoted, same invariant the checkout UI relies on for preselection.
+    if (patch.is_default) {
+      await supabase.from('addresses').update({ is_default: false }).eq('user_id', userId)
+    }
+
+    const { data, error } = await supabase
+      .from('addresses')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      // auth.uid() = user_id RLS policy (migration 031) already scopes this to the
+      // caller's own rows — the explicit eq('user_id', ...) is defense-in-depth.
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single()
+
+    if (error || !data) throw new Error(error?.message ?? 'Address not found')
+    return data as unknown as Address
+  },
+
   async findAll(filters: { search?: string; page?: number; limit?: number }): Promise<{ users: CustomerWithStats[]; count: number }> {
     const supabase = createAdminClient()
     const page = filters.page ?? 1
