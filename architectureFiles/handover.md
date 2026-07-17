@@ -1,11 +1,11 @@
 # Handover — MYLINI v2
-**Last Updated:** 2026-07-17
-**Phase Completed:** Opti Phase 1–3 (Performance, Perceived UX, Security & Reliability) + production incident fix + Resend order notifications
+**Last Updated:** 2026-07-17 (later same day — Vercel deployment incident + fix)
+**Phase Completed:** Opti Phase 1–3 (Performance, Perceived UX, Security & Reliability) + two production incident fixes + Resend order notifications
 **Database:** LIVE ✅ — Supabase `jxazdoawlghbfzdmwwmu.supabase.co` (35 migration files deployed, RLS enabled on every user-owned table)
 **Admin Platform:** WORKING ✅ — Stateless HMAC token auth, no DB user required, now also protected server-side via `proxy.ts`
-**Storefront API:** WORKING ✅ — RLS-enforced, JWT-signed authenticated client for logged-in reads, rate limited
+**Storefront API:** WORKING ✅ — RLS-enforced, JWT-signed authenticated client for logged-in reads, rate limited — **not actually ISR-cached, see below**
 **Email:** LIVE ✅ — Resend order-placed notification to the store owner
-**Deployment:** Netlify ✅ — mylini-demo.netlify.app (auto-deploys from main); pushed to `origin/main` at commit `6519cb1`
+**Deployment:** Netlify ✅ (mylini-demo.netlify.app) — Vercel ✅ (mylini.vercel.app, confirmed working after the incident below). Both auto-deploy from `main`; pushed to `origin/main` at commit `16e9d92`.
 
 ---
 
@@ -26,7 +26,8 @@
 | Opti Phase 1 | ✅ Done | Backend performance — atomic order RPC, optimistic cart, AVIF |
 | Opti Phase 2 | ✅ Done | Perceived UX — blur/fade images, loading states, preload tuning |
 | Opti Phase 3 | ✅ Done | Security — RLS, JWT auth, rate limiting, CSP, XSS sanitization, `proxy.ts` |
-| Production incident | ✅ Fixed | RLS grant gaps (migration 031) broke login + authenticated reads; fixed by 034/035 |
+| Production incident #1 | ✅ Fixed | RLS grant gaps (migration 031) broke login + authenticated reads; fixed by 034/035 |
+| Production incident #2 | ✅ Fixed | Vercel: `isomorphic-dompurify`/`jsdom` leaked into every public route's bundle via `ProductService`, 500'd every storefront page; fixed by lazy-loading it |
 | Resend integration | ✅ Done | Order-placed email to store owner |
 
 ---
@@ -76,8 +77,26 @@ Also reverted, per explicit user choice, from the in-progress OTP flow back to s
 ### Discovered but not fixed — flagged for the next session
 `CartService.mergeGuestCartToUser` (runs on every login) looks up the user's cart via `CartRepository.findByUserId`, which still uses the plain anon client — under migration 031's RLS, anon can only see guest carts, so this always returns nothing and falls back to creating an orphaned cart row the live storefront never queries again. Cart items merged at login can appear to vanish. Predates this session; not yet fixed.
 
+### Production incident #3 (fixed) — Vercel deployment 500'd on every route
+Later the same day, the user connected the repo to Vercel (in addition to the existing Netlify deployment) and every page returned `500`. This took several rounds to diagnose correctly — worth recording the wrong turns, not just the answer:
+
+1. **First hypothesis (wrong): missing environment variables.** `.env.local` is gitignored and had never been added to Vercel's dashboard, so this was a reasonable first guess — and a real, separate problem that did need fixing (the user hadn't added the env vars yet at that point). Walked through adding all of them, plus the Vercel-specific gotchas: environment scope (Production/Preview/Development checkboxes) and that adding a var doesn't retroactively apply to an already-built deployment — a new one must be triggered.
+2. **Second hypothesis (wrong, but productive): the homepage's own data-fetching.** Traced the entire `/` render tree — every fetch call (`ProductService`, `HomepageService`, `getCategories()`) is `.catch()`-guarded, so nothing there should crash even with bad env vars. Found one real, independent bug along the way: `CategoryCircles` (a Server Component) imported `getCategories()` from `src/lib/api/categories.ts`, which does `fetch('/api/categories')` with a **relative URL** — invalid in a Node/SSR context, works only in the browser. Fixed (commit `540b285`) by calling `CategoryService.getWithChildren()` directly instead, matching the pattern the rest of the homepage already used. Real bug, but turned out not to be the crash — it was already silently caught.
+3. **User provided the actual Vercel Runtime Log** (not the Build Log, which looked completely clean and had been the only log available until this point) — it read `Error: Failed to load external module jsdom-...`. This was the real answer: `src/lib/utils/sanitizeHtml.ts` had a top-level `import DOMPurify from 'isomorphic-dompurify'`. That's only called by `ProductService.create`/`update` (admin-only), but `ProductService` is imported by the homepage/product/shop pages for unrelated read methods too — Next.js bundles a route's whole reachable server import graph into its function, so `jsdom` got dragged into every public route's bundle and failed to load on Vercel, crashing at **module-load time**, before any of the `.catch()`-guarded application code from hypothesis #2 ever ran. This is exactly why tracing the render tree found nothing — the bug wasn't in that code at all. Independently corroborated: the one deployment that still worked (`368618b`) predates `isomorphic-dompurify` being added to the codebase at all.
+4. **Fix** (commit `16e9d92`): `sanitizeProductDescription()` now `await import('isomorphic-dompurify')`s lazily inside the function body instead of at module scope. Function is now `async`; both call sites in `productService.ts` updated. Verified via `tsc`, a fresh `next build`, and a local `next start` serving `/`, `/product/[slug]`, `/shop/[category]` as `200` — then confirmed working on a fresh Vercel deployment.
+
+**New durable rule added to `CLAUDE.md` and `AGENTS.md`**: never top-level-import a heavy/Node-only dependency into a module reachable from a public route unless every route importing it actually needs it — lazy-`import()` it inside the function that uses it instead. This class of bug passes `tsc`/`next build` cleanly and only surfaces as a runtime crash on the deployment platform.
+
+**Also discovered, not fixed**: `/`, `/product/[slug]`, `/shop/[category]` all build as `ƒ Dynamic` rather than `○ Static`, despite `revalidate = 60` — `src/lib/db/server.ts`'s Supabase client calls `cookies()` internally, which forces Next.js out of static rendering wherever it's used. The "ISR caching" claims in earlier revisions of this file and `systemstatus.md` were wrong; corrected in this update. Real performance impact, not just a docs error — every visit does a live Supabase round-trip. Not fixed this session.
+
 ### Committed and pushed
-All of the above — 65 files — committed as `6519cb1` and pushed to `origin/main`. `.env.local` confirmed never staged (diff scanned for secret patterns before committing).
+- `6519cb1` — the full Opti Phase 1–3 + incident #1 fix + Resend integration (65 files)
+- `9e67478` — documentation refresh (systemstatus/handover/FIXES_APPLIED/fontend)
+- `d664a8f` — empty commit, triggered a Vercel redeploy after env vars were added
+- `540b285` — `CategoryCircles` relative-fetch fix
+- `16e9d92` — the actual jsdom/isomorphic-dompurify lazy-load fix (incident #3)
+
+`.env.local` confirmed never staged at any point (diff scanned for secret patterns before every commit).
 
 ---
 
@@ -133,7 +152,7 @@ Middleware:  requireAdmin() → verifyAdminToken() inline, constant-time, rate-l
 Context:     AdminContext = { adminEmail: string }
 ```
 
-### Storefront API (Working, RLS-enforced)
+### Storefront API (Working, RLS-enforced; `/`, `/product/[slug]`, `/shop/[category]` render fully dynamically, not ISR-cached — see caveat above)
 ```
 GET /api/products, /api/products/[slug], /api/categories     ✅ anon client, public reads
 GET/POST/PATCH/DELETE /api/cart                               ✅ anon client, session-based (see cart-merge bug above)
@@ -154,6 +173,7 @@ POST /api/auth/otp/send, /verify                               🟡 built, not c
 4. **Zod schemas in `src/lib/validations/`** — no inline schemas in route files
 5. **RLS is real now** — `anon`/`authenticated` grants are least-privilege; any new authenticated-client query that joins a table needs to confirm that table actually grants `SELECT` to `authenticated` (migration 031 missed catalog tables — fixed in 035; check before assuming a grant exists)
 6. **Migration files ≠ deployment state** — this project has no automatic migration runner; every migration is written here and run manually via the Supabase SQL Editor by the user. Always ask/confirm which migrations are actually live before assuming a schema change took effect.
+7. **Never top-level-import a heavy/Node-only dependency into a module reachable from a public route** — `await import(...)` it lazily inside the function that actually uses it. Next.js bundles a route's whole reachable server import graph into that route's serverless function; a top-level import in a shared module ships to every route that imports that module, not just the one that calls it. This crashed every storefront page on Vercel once already (`isomorphic-dompurify`/`jsdom` via `ProductService` → `sanitizeHtml.ts`, see Production incident #3 above). Passes `tsc`/`next build` cleanly either way — only shows up as a runtime crash on the deployment platform.
 
 ---
 
@@ -179,6 +199,7 @@ POST /api/auth/otp/send, /verify                               🟡 built, not c
 | Resend customer confirmation email | Declined for now | Needs a verified sending domain (currently sandbox-only, one fixed recipient) |
 | Cloudflare R2 images | Planned | Cloudinary active |
 | Duplicate migration "031" numbering | Cosmetic | Both files deployed correctly; just don't trust the numeric prefix as an ordering key past 030 |
+| `/`, `/product/[slug]`, `/shop/[category]` not actually ISR-cached | Should fix | `server.ts`'s `cookies()` call forces dynamic rendering despite `revalidate = 60`; real perf impact, discovered during the Vercel incident |
 
 ---
 

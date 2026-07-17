@@ -4,6 +4,37 @@ Running log of significant production/live-DB bugs and their fixes, newest first
 
 ---
 
+## 2026-07-17 (later same day) — Vercel: every storefront route crashed with 500 (jsdom bundling)
+
+**Issue:** After connecting the repo to Vercel (in addition to the existing Netlify deployment), every single page returned `500 FUNCTION_INVOCATION_FAILED`, both in the browser and in Vercel's own deployment preview pane. `npx tsc --noEmit` and `npm run build` passed cleanly, both locally and as part of Vercel's own build step — the Build Log showed a fully healthy build with no errors.
+
+**Wrong turns first, since they're informative:**
+1. **Missing environment variables** — a reasonable first hypothesis (`.env.local` is gitignored and had genuinely never been added to Vercel), and real work was needed there regardless (env vars had to be added, with the added gotcha that Vercel scopes them per-environment — Production/Preview/Development — and that adding one doesn't retroactively apply to an already-built deployment). But even after doing this correctly and redeploying, the 500 persisted.
+2. **Suspected the homepage's own data-fetching** — traced the entire `/` render tree; every fetch (`ProductService`, `HomepageService`, `getCategories()`) turned out to be `.catch()`-guarded, so nothing there should be able to crash even with bad data. Found one real, independent bug along the way: `CategoryCircles` (a Server Component) called `getCategories()` (`src/lib/api/categories.ts`), which does `fetch('/api/categories')` with a **relative URL** — only valid in a browser context, not under Node/SSR. Fixed by calling `CategoryService.getWithChildren()` directly instead (same service the API route itself delegates to). Real bug, silently caught, **not** the crash.
+
+**Actual root cause**, found only once the user pulled Vercel's **Runtime Log** (a separate tab from the Build Log) for a failing request:
+```
+Error: Failed to load external module jsdom-...
+```
+`src/lib/utils/sanitizeHtml.ts` had a **top-level** `import DOMPurify from 'isomorphic-dompurify'`. That function is only called by `ProductService.create`/`update` (the admin product-save path) — but `ProductService` is also imported by the public homepage/product/shop pages, for their own unrelated read methods (`list`, `getBySlug`, etc.). Next.js bundles a route's *entire reachable server-side import graph* into that route's serverless function, so `isomorphic-dompurify`'s `jsdom` dependency got bundled into every one of those public routes too, despite none of them ever calling the sanitize function. `jsdom` then failed to load inside Vercel's bundled Node runtime, crashing the function at **module-load time** — before any application code, including every `.catch()` guard traced in step 2 above, ever got a chance to run. That's exactly why tracing the render tree found nothing: the bug wasn't reachable from there at all.
+
+Independently corroborated: the one deployment that kept working throughout this investigation (`368618b`, "smooth hamburger drawer animation") predates `isomorphic-dompurify` being added to the codebase entirely — it was first introduced in `6519cb1` (Opti Phase 3). Every deployment built from `6519cb1` onward crashed; the one built before it didn't. That timing lines up exactly with the diagnosis.
+
+**Fix:** `sanitizeProductDescription()` (`src/lib/utils/sanitizeHtml.ts`) now `await import('isomorphic-dompurify')`s **inside** the function body instead of at module scope, so only the actual admin write path pulls it in. The function is now `async`; both call sites in `src/lib/services/productService.ts` (`create`, `update`) updated to `await` it.
+
+**Verification:** `tsc --noEmit` clean; fresh `next build` succeeds; `next start` (production build, run locally) served `/`, `/product/[slug]`, and `/shop/[category]` all as `200`; confirmed working on a fresh Vercel deployment after pushing the fix.
+
+**Durable rule added** (`CLAUDE.md` Rules section, `AGENTS.md` new "Server-Side Import Chains" section, `handover.md` Critical Architecture Rules): never top-level-import a heavy or Node-only dependency into a module reachable from a public/high-traffic route unless every route importing that module actually needs it — lazy-`import()` it inside the function that uses it instead. This class of bug is invisible to `tsc`/`next build` (both pass regardless) and only surfaces as a runtime crash on the deployment platform — if a route works locally but 500s only when deployed, check the platform's Runtime/Function logs, not just the Build log.
+
+**Related, discovered but not fixed:** while tracing this, confirmed that `/`, `/product/[slug]`, and `/shop/[category]` all build as `ƒ Dynamic`, not `○ Static`, despite `export const revalidate = 60` in each — `src/lib/db/server.ts`'s Supabase client calls `cookies()` internally, and Next.js forces a route fully dynamic the moment `cookies()` is called anywhere in its render tree, regardless of whether the value is used. Earlier revisions of `systemstatus.md`/`handover.md` incorrectly described these routes as ISR-cached; corrected. Real performance impact (every visit does a live, uncached Supabase round-trip) — not fixed this session.
+
+**Files:**
+- `src/lib/utils/sanitizeHtml.ts`, `src/lib/services/productService.ts` (commit `16e9d92`) — the actual fix
+- `src/components/home/CategoryCircles.tsx` (commit `540b285`) — the relative-fetch fix found along the way, kept as a real improvement
+- `d664a8f` — empty commit used to trigger a Vercel redeploy after env vars were added
+
+---
+
 ## 2026-07-17 — Production RLS Grant Gap (login + authenticated reads broken)
 
 **Issue:** Immediately after deploying migration `031_rls_and_permissions.sql` (Opti Phase 3's Row Level Security rollout), the entire site stopped working — `POST /api/auth/login` returned `500` with `permission denied for table users`. After a first fix, a second, narrower instance of the same class of bug broke `GET /api/wishlist` with `permission denied for table products`.

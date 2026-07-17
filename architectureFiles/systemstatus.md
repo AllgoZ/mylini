@@ -1,13 +1,13 @@
 # System Status — MYLINI v2
-**Last Updated:** 2026-07-17
-**Build:** ✅ `npx tsc --noEmit` = 0 errors · `npm run build` = passing
+**Last Updated:** 2026-07-17 (later same day — Vercel production incident + fix)
+**Build:** ✅ `npx tsc --noEmit` = 0 errors · `npm run build` = passing (both Netlify and Vercel build successfully)
 **Database:** ✅ LIVE — `jxazdoawlghbfzdmwwmu.supabase.co` (35 migration files; see numbering caveat below)
 **Admin Platform:** ✅ WORKING — stateless HMAC token auth, no DB user required, server-side route protection via `proxy.ts`
-**Storefront API:** ✅ WORKING — real Supabase data with ISR caching, Row Level Security enforced, rate limiting active
+**Storefront API:** ✅ WORKING — real Supabase data, Row Level Security enforced, rate limiting active — **not actually ISR-cached despite `revalidate = 60`, see caveat below**
 **Security:** ✅ HARDENED — RLS on every user-owned table, self-signed JWT auth for `authenticated`-role queries, CSP, DOMPurify XSS defense, constant-time admin auth
 **Email:** ✅ LIVE — Resend order-placed notification to the store owner on every successful checkout
-**Performance:** ✅ OPTIMIZED — atomic order-creation RPC, optimistic cart UI, ISR caching, blur/fade image loading
-**Deployment:** ✅ Netlify — auto-deploys from `main` branch (mylini-demo.netlify.app); pushed to `origin/main` as of commit `6519cb1`
+**Performance:** ✅ OPTIMIZED — atomic order-creation RPC, optimistic cart UI, blur/fade image loading (ISR caching claim corrected below — routes are actually rendering dynamically)
+**Deployment:** ✅ Netlify (mylini-demo.netlify.app) — ✅ Vercel (mylini.vercel.app), confirmed working after the incident below. Both auto-deploy from `main`. Latest pushed commit: `16e9d92`.
 
 ---
 
@@ -29,6 +29,7 @@
 | Opti Phase 2 — Perceived UX | ✅ Complete | Blur/fade image loading, route-level loading states, preload/prefetch tuning |
 | Opti Phase 3 — Security & Reliability | ✅ Complete | Real per-user RLS, JWT-signed authenticated client, rate limiting, CSP, XSS sanitization, `proxy.ts` admin protection |
 | Production incident — RLS grant gaps | ✅ Fixed | Migration 031 shipped without `service_role`/`authenticated` table grants; fixed by migrations 034 + 035 |
+| Production incident — Vercel jsdom crash | ✅ Fixed | `isomorphic-dompurify`'s top-level import leaked `jsdom` into every public route's bundle via `ProductService`; 500'd every storefront page on Vercel. Fixed by lazy-`import()`ing it inside `sanitizeProductDescription()`. See full writeup below and `FIXES_APPLIED.md`. |
 | Resend order notifications | ✅ Complete | Store-owner email on every order placed |
 | Phase 3B — Wishlist Enhancements | ✅ Complete | Superseded by Opti Phase 3 (RLS + JWT auth), see below |
 | OTP verification | 🟡 Built, not wired | Infrastructure complete (migrations 032/033, service, routes); login UI still phone-only per explicit "keep it simple" decision |
@@ -61,6 +62,7 @@
 - **Duplicate migration number 031**: `src/lib/db/migrations/031_order_tracking.sql` (Phase 6, adds `orders.tracking_number`/`tracking_url`) and `031_rls_and_permissions.sql` (Opti Phase 3, RLS) share the number 031. Both are deployed; the RLS one is also timestamped `20240101000031` in `supabase/migrations/`, and `031_order_tracking.sql` has no `supabase/migrations/` counterpart at all. Renumbering wasn't done to avoid confusing already-deployed migration history — just be aware the numeric prefix is not a reliable ordering key past 030.
 - **`supabase/migrations/` gap**: files 026–029 (`product_extensions`, `size_chart`, `shopify_parity`, `homepage_sections`) exist in `src/lib/db/migrations/` but have no timestamped copy in `supabase/migrations/`. Pre-existing gap, not introduced this session.
 - **`database.types.ts` is stale**: generated before `otps` and `rate_limits` existed. Repository code that touches those two tables casts the Supabase client to `any` (`otpRepository.ts`) as a documented workaround. Regenerate with the command in the TypeScript/Zod Notes section of `CLAUDE.md` once convenient — not urgent, nothing currently breaks.
+- **`/`, `/product/[slug]`, `/shop/[category]` are NOT actually ISR-cached**, despite `export const revalidate = 60` in each `page.tsx` and every prior status report (including earlier revisions of this file) claiming otherwise. `src/lib/db/server.ts`'s Supabase client calls `await cookies()` internally, and calling `cookies()` anywhere in a route's render tree forces Next.js to render that route fully dynamically on every request, overriding `revalidate` entirely. Confirmed via Vercel's build output: all three routes build as `ƒ Dynamic`, not `○ Static`. Discovered while debugging the Vercel incident below; **not fixed** — would need public/anonymous reads split onto a cookie-free Supabase client to restore the intended ISR behavior. Real performance impact (every visit is a live, uncached Supabase round-trip), not just a documentation error.
 
 ---
 
@@ -86,6 +88,22 @@ Migration 031 (RLS) revoked `anon`'s blanket access but never granted `service_r
 - **Migration 035** — explicit `authenticated` `SELECT` on the 8 catalog tables.
 
 Both verified live end-to-end: login, wishlist (add/list), address creation, and order placement all confirmed working post-fix.
+
+### Production incident #2 (fixed) — Vercel: every storefront route 500'd
+
+Deploying to Vercel (in addition to the existing Netlify deployment) surfaced a second, unrelated production bug: **every visit to `/` (and by the same mechanism, `/product/[slug]` and `/shop/[category]`) returned `500 FUNCTION_INVOCATION_FAILED`**, even though `npx tsc --noEmit` and `npm run build` both passed cleanly, both locally and in Vercel's own build step. The build log looked completely healthy; only Vercel's **Runtime Logs** (a separate tab from Build Logs) showed the actual cause:
+
+```
+Error: Failed to load external module jsdom-...
+```
+
+**Root cause:** `src/lib/utils/sanitizeHtml.ts` had a top-level `import DOMPurify from 'isomorphic-dompurify'`. That module is only used by `ProductService.create`/`update` (the admin product-save path), but `ProductService` is also imported by the public homepage/product/shop pages for their own, unrelated read methods (`list`, `getBySlug`, etc.). Next.js bundles a route's *entire reachable server-side import graph* into that route's serverless function — so `isomorphic-dompurify`'s `jsdom` dependency got bundled into every one of those public routes too, despite none of them ever calling the sanitize function. `jsdom` then failed to load inside Vercel's bundled Node runtime, crashing the function at **module-load time** — before any application code (including every `.catch()` guard in the render tree) ever got a chance to run. This is why extensive tracing of the homepage's data-fetching logic (all of it defensively `.catch()`-wrapped) never turned up an explanation — the crash wasn't in that code at all.
+
+Confirmed independently: the one deployment that still worked throughout this investigation (`368618b`) predates `isomorphic-dompurify` being added to the codebase entirely (first shipped in `6519cb1`, Opti Phase 3) — every deployment since then crashed, which lines up exactly.
+
+**Fix:** `sanitizeProductDescription()` now dynamically `import()`s `isomorphic-dompurify` inside the function body instead of at module scope, so only the actual admin write path pulls it in. Function is now `async`; both call sites in `productService.ts` updated to `await` it. Verified: `tsc` clean, fresh production build succeeds, `next start` serves `/`, `/product/[slug]`, `/shop/[category]` all `200` locally, and confirmed working on a fresh Vercel deployment.
+
+**Durable rule added** (`CLAUDE.md`, `AGENTS.md`): any heavy or Node-only dependency needed by only one narrow code path must be lazily `import()`ed inside the function that uses it, never top-level-imported into a module that's reachable from a public/high-traffic route. This class of bug is invisible to `tsc`/`next build` and only surfaces as a runtime crash on the deployment platform — if a route works locally but 500s only when deployed, check Runtime/Function logs, not the build log.
 
 ### Other Opti Phase 3 hardening
 
