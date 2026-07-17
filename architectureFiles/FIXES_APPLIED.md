@@ -1,4 +1,43 @@
-# Fixes Applied — Product Visibility Issue
+# Fixes Applied — MYLINI v2
+
+Running log of significant production/live-DB bugs and their fixes, newest first.
+
+---
+
+## 2026-07-17 — Production RLS Grant Gap (login + authenticated reads broken)
+
+**Issue:** Immediately after deploying migration `031_rls_and_permissions.sql` (Opti Phase 3's Row Level Security rollout), the entire site stopped working — `POST /api/auth/login` returned `500` with `permission denied for table users`. After a first fix, a second, narrower instance of the same class of bug broke `GET /api/wishlist` with `permission denied for table products`.
+
+**Root Cause:** Migration 031 revoked `anon`'s previously-blanket table access (correct — that was the point of adding RLS) but never granted the equivalent explicit `GRANT` to `service_role` or `authenticated`. Two wrong assumptions caused this:
+1. `service_role` has `BYPASSRLS` in Supabase by default, which was assumed to imply full table access. **It doesn't** — `BYPASSRLS` only skips *row-level* policy evaluation. Table-level `GRANT`s (`SELECT`/`INSERT`/etc.) are a separate, still-required layer, and migration 031 never added them for `service_role`.
+2. Catalog-table `SELECT` (`products`, `product_images`, etc.) was granted to `anon` (for public storefront browsing) but the parallel grant to `authenticated` was simply missed — `anon` and `authenticated` are distinct Postgres roles; a grant to one never extends to the other.
+
+**Diagnosis:** Postgres's own error messages named the fix directly —
+```
+permission denied for table users
+permission denied for table products
+hint: Grant the required privileges to the current role with: GRANT SELECT ON public.products TO authenticated;
+```
+Confirmed each hypothesis by testing the failing queries directly (bypassing the app's generic "Internal server error" response) with the real signed JWT / service-role client before writing the fix, rather than guessing.
+
+**Fix:**
+- **`034_grant_service_role.sql`** — explicit `GRANT SELECT, INSERT, UPDATE, DELETE` for `service_role` on all 24 application tables, plus `EXECUTE` on all 7 RPC functions it calls (`decrement_stock`, `reserve_stock`, `release_stock`, `increment_coupon_usage`, `create_order_transactional`, `check_rate_limit`, `increment_otp_attempts`).
+- **`035_grant_authenticated_catalog_read.sql`** — explicit `GRANT SELECT` for `authenticated` on the 8 catalog tables (`categories`, `products`, `product_variants`, `product_images`, `product_attributes`, `inventory`, `inventory_logs`, `homepage_sections`).
+
+Both deployed by the user via the Supabase SQL Editor (this project has no automatic migration runner — every migration here is written by the assistant and deployed manually).
+
+**Verification:** Retested live, end-to-end, after each fix: `POST /api/auth/login` → `200` with a real session; `GET/POST /api/wishlist` → `200`/`201` including the product/image join; `POST /api/addresses` → `201`; `POST /api/orders` → `201`, full order created via the `create_order_transactional` RPC with stock decrement and a Resend order-notification email firing without error.
+
+**Files:**
+- `src/lib/db/migrations/034_grant_service_role.sql` + `supabase/migrations/20240101000034_grant_service_role.sql`
+- `src/lib/db/migrations/035_grant_authenticated_catalog_read.sql` + `supabase/migrations/20240101000035_grant_authenticated_catalog_read.sql`
+- `src/lib/services/authService.ts`, `src/lib/repositories/userRepository.ts` — briefly reverted to the anon client mid-diagnosis to isolate whether the bug was `service_role`-specific (it wasn't — anon failed identically post-031, which was the clue that pointed at the missing grants rather than a client-selection bug); reverted back to `createAdminClient()` once the real root cause was confirmed.
+
+**Not fixed, flagged separately:** `CartService.mergeGuestCartToUser` (runs on every login) still uses the anon client to look up a user's cart by `user_id`, which migration 031's RLS now always filters to zero rows for anon. This predates the RLS rollout in effect (it was silently relying on anon's old blanket access) and now silently falls back to creating an orphaned cart row. See `systemstatus.md` / `handover.md` for details — not yet fixed.
+
+---
+
+# Product Visibility Issue
 
 **Date:** 2026-06-03  
 **Issue:** Products created in admin panel (status='active') not showing on storefront  

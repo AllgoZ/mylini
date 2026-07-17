@@ -1,10 +1,11 @@
 # Handover — MYLINI v2
-**Last Updated:** 2026-07-08
-**Phase Completed:** Phase 5.1 (Admin Auth Hardening)
-**Database:** LIVE ✅ — Supabase `jxazdoawlghbfzdmwwmu.supabase.co` (29 migrations deployed)
-**Admin Platform:** WORKING ✅ — Stateless HMAC token auth, no DB user required
-**Storefront API:** OPTIMIZED ✅ — ISR-cached, 20-30% faster, real data with DB aggregates
-**Deployment:** Netlify ✅ — mylini-demo.netlify.app (auto-deploys from main)
+**Last Updated:** 2026-07-17
+**Phase Completed:** Opti Phase 1–3 (Performance, Perceived UX, Security & Reliability) + production incident fix + Resend order notifications
+**Database:** LIVE ✅ — Supabase `jxazdoawlghbfzdmwwmu.supabase.co` (35 migration files deployed, RLS enabled on every user-owned table)
+**Admin Platform:** WORKING ✅ — Stateless HMAC token auth, no DB user required, now also protected server-side via `proxy.ts`
+**Storefront API:** WORKING ✅ — RLS-enforced, JWT-signed authenticated client for logged-in reads, rate limited
+**Email:** LIVE ✅ — Resend order-placed notification to the store owner
+**Deployment:** Netlify ✅ — mylini-demo.netlify.app (auto-deploys from main); pushed to `origin/main` at commit `6519cb1`
 
 ---
 
@@ -21,143 +22,88 @@
 | Phase 3+4 | ✅ Done | CMS + Admin platform — Homepage sections + full product management |
 | Phase 5 | ✅ Done | Performance optimization — ISR, SQL aggregates, query optimization |
 | Phase 5.1 | ✅ Done | Admin auth hardening — stateless HMAC token, Netlify deployment fixed |
-| Phase 3B | 🔲 Next | Wishlist enhancements — user persistence, cart merge |
+| Phase 6 | ✅ Done | UX & mobile — order tracking, order detail, cart layout, related products |
+| Opti Phase 1 | ✅ Done | Backend performance — atomic order RPC, optimistic cart, AVIF |
+| Opti Phase 2 | ✅ Done | Perceived UX — blur/fade images, loading states, preload tuning |
+| Opti Phase 3 | ✅ Done | Security — RLS, JWT auth, rate limiting, CSP, XSS sanitization, `proxy.ts` |
+| Production incident | ✅ Fixed | RLS grant gaps (migration 031) broke login + authenticated reads; fixed by 034/035 |
+| Resend integration | ✅ Done | Order-placed email to store owner |
 
 ---
 
-## What Was Done This Session (Phase 5.1 — Admin Auth Hardening)
+## What Was Done This Session
 
-### Problem
-Admin login was returning "Internal server error" on Netlify because it tried to look up a user with the `admin` role in the `user_roles` database table, but no such user existed.
+This session covered three planned optimization phases (each read from `prompts/Plans/opti_phaseN.md`, planned, then executed), a live production incident discovered immediately after, and one new integration requested mid-session.
 
-### Root Cause
-The old flow was:
-1. Verify `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars ✅
-2. Query `user_roles` JOIN `users` for a user with role='admin' ❌ (no admin user in DB)
-3. Create a session row in the `sessions` table
-4. Set `session` cookie
+### Opti Phase 1 — Backend Performance
+- **`create_order_transactional`** (migration 030) — atomic, `SECURITY DEFINER` Postgres RPC replacing a multi-step, N+1-prone order-creation sequence (row-locks stock, validates, decrements, records coupon usage, all in one transaction with rollback on failure).
+- Optimistic cart UI updates (`useCartStore`), trimmed product-detail query (`DETAIL_SELECT_INNER`), AVIF image format, homepage batched section fetch (`findByTypes`).
 
-### Fix: Stateless HMAC Token Auth
-New flow — **zero database calls**:
-1. Verify `ADMIN_EMAIL` + `ADMIN_PASSWORD` env vars
-2. Issue HMAC-SHA256 signed `admin_token` cookie (signed with `ADMIN_PASSWORD`, 7-day TTL)
-3. `requireAdmin()` middleware verifies signature + expiry inline — no DB lookup at all
+### Ad-hoc fix (between phases)
+- Removed the mobile sticky "Add to Cart" bar on the product page per explicit request; kept the existing inline button + "Added to cart" confirmation.
 
-### Files Changed
-| File | Change |
-|---|---|
-| `src/app/api/admin/auth/login/route.ts` | Rewritten: generates signed token, sets `admin_token` cookie |
-| `src/lib/middleware/adminMiddleware.ts` | Rewritten: `verifyAdminToken()` HMAC check, `AdminContext = { adminEmail }` |
-| `src/app/api/admin/inventory/[variantId]/route.ts` | `ctx.user.id` → `ctx.adminEmail` for adjustStock audit |
-| `src/app/api/admin/products/[id]/variants/[variantId]/route.ts` | Same |
-| `netlify.toml` | Added `[build.environment]` with `SECRETS_SCAN_OMIT_PATHS/KEYS` |
+### Opti Phase 2 — Perceived UX
+- `FadeImage` (blur+fade wrapper over `next/image`), route-level `loading.tsx` for shop/product pages, `SizeChartModal` extracted for `next/dynamic`, adjacent-image preload on product pages, passive scroll listener on the navbar, Cloudinary preconnect.
 
-### Key Architecture Point
-**`AdminContext` no longer has a `user` field.** It has `adminEmail: string`.
-Any route that calls `requireAdmin()` and needs to log who did an action should use `ctx.adminEmail`.
+### Opti Phase 3 — Security, Reliability & Production Readiness
+The largest phase. Closed the most serious findings from `architectureFiles/audit_results.md`:
+- **Real per-user RLS**, backed by a self-signed JWT (`src/lib/db/authenticatedClient.ts`) since this app has no Supabase Auth session — `auth.uid()` is populated from a JWT the app mints itself from an already-validated phone/session login.
+- **Rate limiting** — Supabase-table-based (`rate_limits` + `check_rate_limit()` RPC, fixed window, fails open), applied to OTP, checkout, coupon validation, cart/wishlist mutation, admin login, admin API.
+- **XSS defense** — `isomorphic-dompurify` sanitizes admin product descriptions at save-time and render-time.
+- **Production CSP** — no nonces (would force dynamic rendering and undo Opti Phase 1's ISR win), dev-only `unsafe-eval`, `unsafe-inline` in both environments (RSC streaming requirement). Implemented per an explicit, detailed user directive after an incident (see below) — DOMPurify remains the primary XSS defense, CSP is defense-in-depth.
+- **`src/proxy.ts`** — Next.js 16 renamed `middleware.ts` → `proxy.ts` (confirmed by reading `node_modules/next/dist/docs/` per `AGENTS.md`'s warning); moved admin route protection server-side.
+- **Admin login hardening** — constant-time password comparison, rate limiting.
+- **OTP infrastructure** — built in full (hashed codes, 5-min expiry, 5 attempts, 60s cooldown, pluggable `SmsProvider`) but **not wired into the login UI**. Mid-phase, the user reported the whole site had stopped loading and said "I don't need OTP verification right now, keep it simple" — see incident below.
+- Consistent error-response shapes, logging wired into the existing Sentry/audit-log stubs.
 
----
+### Site-down incident, mid-Opti-Phase-3
+Two related incidents, both resolved within the same session:
 
-## What Was Done Previous Session (Phase 5 Optimization)
+1. **CSP broke the dev server entirely.** The first CSP draft (`script-src 'self'`, no `unsafe-eval`) blocked Next's dev-mode Fast Refresh/HMR — pages server-rendered but no client JS ever ran. Diagnosed via Next's own bundled CSP docs; fixed with dev-only `unsafe-eval` + `unsafe-inline` (required in prod too, for RSC streaming) after the user gave an explicit written directive authorizing exactly that tradeoff.
+2. **Migration 031 (RLS) broke login and every authenticated-client read.** Root cause: 031 revoked `anon`'s blanket table access but never granted `service_role` or `authenticated` the equivalent explicit grants — `BYPASSRLS` (which `service_role` has) only skips row-level policy checks, not table-level `GRANT`s. Confirmed via Postgres's own error (`permission denied for table users`, later `permission denied for table products`). Fixed with two new migrations:
+   - **Migration 034** — explicit `service_role` grants on all 24 tables + `EXECUTE` on all RPCs.
+   - **Migration 035** — explicit `authenticated` `SELECT` on the 8 catalog tables (found while retesting wishlist post-034 — its product/image join still failed).
+   Both deployed by the user via the SQL Editor; verified live end-to-end afterward: login, wishlist add/list, address creation, order placement all confirmed `200`/`201`.
 
-### Comprehensive Performance Audit & Optimization
+Also reverted, per explicit user choice, from the in-progress OTP flow back to simple phone-only login (`loginSchema`, `/api/auth/login`, `PhoneModal.tsx`, `useAuthStore.login()`) — the OTP backend infrastructure was left in place, unused, rather than deleted, in case it's reconnected later.
 
-**Audit Findings:** 21 performance issues identified across API, database queries, and caching strategy
+### Resend order-notification integration (new, user-requested mid-session)
+- `src/lib/integrations/resend/client.ts` — replaced the stub with a real `Resend` SDK client. `sendOrderPlacedNotification()` builds an HTML email (order total/subtotal/discount, shipping address, customer name/phone/email, itemized line items — all user-controlled fields HTML-escaped) and sends it to `ORDER_NOTIFICATION_EMAIL`.
+- Wired into `OrderService.create()` — **awaited**, not fire-and-forget (Netlify functions can freeze immediately after the response is sent), wrapped in try/catch so a Resend outage never fails checkout.
+- Verified live: sent a direct test email via the Resend API (confirmed key validity + sandbox deliverability to the configured address), then placed a real order end-to-end through the app and confirmed no error surfaced from the notification step.
+- Uses Resend's sandbox sender (`onboarding@resend.dev`) — only delivers to the Resend account's own verified address. A verified sending domain would be needed to notify a different address or add a customer-facing confirmation email later.
 
-**Critical Fixes Applied:**
+### Discovered but not fixed — flagged for the next session
+`CartService.mergeGuestCartToUser` (runs on every login) looks up the user's cart via `CartRepository.findByUserId`, which still uses the plain anon client — under migration 031's RLS, anon can only see guest carts, so this always returns nothing and falls back to creating an orphaned cart row the live storefront never queries again. Cart items merged at login can appear to vanish. Predates this session; not yet fixed.
 
-1. **adminStatsService.ts** — SQL aggregates instead of full-table scan
-   - Was: Fetching ALL order rows to sum client-side
-   - Now: `total.sum()` at DB level; admin dashboard loads 500ms–1s faster
-
-2. **Navbar.tsx** — Cart fetch guard
-   - Was: Fetching cart on every page navigation
-   - Now: Skip API if store already has data; saves ~150ms per nav
-
-3. **productRepository.ts** — Primary image extraction optimization
-   - Was: `.find()` on images array per product
-   - Now: Pre-sorted slice with priority sort; cleaner + faster
-
-4. **cartRepository.ts** — Single nested query
-   - Was: Two sequential queries (cart, then items)
-   - Now: One nested select; saves ~150ms per cart load
-
-5. **inventoryRepository.ts** — DB-level image filtering
-   - Was: Loading all images, finding primary client-side
-   - Now: `is_primary=true` filter pushed to Supabase
-
-6. **Shop/category pages** — ISR caching (BIGGEST WIN)
-   - Was: `force-dynamic` — every visitor hit DB
-   - Now: `revalidate=60` (Incremental Static Regeneration); cached for 60s
-   - Impact: 99% of visitors served from cache
-
-7. **Admin products list** — Limit reduction
-   - Was: 100 products per load
-   - Now: 30 products per load; 3× less data
-
-**Column Selection Cleanup:**
-- categoryRepository.ts: Explicit `select()` instead of `select('*')` — removed 8 unused columns
-- Reduced payload size 10-20% across all category queries
-
-**Result:** 20-30% overall performance improvement across the board
+### Committed and pushed
+All of the above — 65 files — committed as `6519cb1` and pushed to `origin/main`. `.env.local` confirmed never staged (diff scanned for secret patterns before committing).
 
 ---
 
-## What Was Done Previous Session (Phase 4)
+## What Was Done Previous Sessions (Phase 5.1 and earlier)
 
-### Admin Platform Architecture
-- **Layout isolation** — Next.js route groups `(storefront)/` and `admin/` prevent shell overlap
-  - `src/app/layout.tsx` stripped to bare HTML/fonts/Toaster
-  - `src/app/(storefront)/layout.tsx` created with Navbar, Footer, AuthProvider, PhoneModal
-  - All storefront pages moved under `(storefront)/` group (URL structure unchanged)
-  - Admin routes naturally isolated, no storefront chrome inheritance
-  
-- **Admin authentication** — Email + password session-based login
-  - `src/app/admin/login/page.tsx` dedicated login page (email + password form)
-  - `src/app/api/admin/auth/login/route.ts` validates against ADMIN_EMAIL/ADMIN_PASSWORD env vars
-  - Session created via `AuthService.createSession()`, stored in httpOnly cookie
-  - Admin role verified via `user_roles` table (migration 024)
-  - `requireAdmin()` middleware wrapper protects all admin endpoints
-  - `src/app/admin/layout.tsx` redirects unauthenticated to `/admin/login`
+<details>
+<summary>Phase 5.1 — Admin Auth Hardening</summary>
 
-### Full-Page Product Form (Shopify-Style UX)
-- **Create product** `/admin/products/new` with single-save flow:
-  - Add variants + images before first save (buffered in local state: `pendingVariants[]`, `pendingImages[]`)
-  - Batch-creates product + all variants + all images in one action
-  - Variants show as preview table before save; images show as thumbnail grid
-  
-- **Edit product** `/admin/products/[id]/edit`:
-  - Live variant/image management with API calls
-  - Status dropdown with descriptive labels + draft warning banner
-  - Default status set to `'active'` (products visible on storefront immediately)
-  
-- **Component rewrite** `src/components/admin/ProductForm.tsx`:
-  - Input styling fixed: `bg-white` (was `#FAFAF9`), `border-[#D1D5DB]` (was `#E7E5E4`)
-  - Toggle component restructured: label left, toggle right (Shopify pattern)
-  - Removed `!isEdit` gate; variants/images sections always visible
-  - Added `handleAddVariantRow()` and `handleAddImageRow()` for pre-save buffering
-  - `handleSave` batch-adds pending items after product creation
+**Problem:** Admin login returned "Internal server error" on Netlify — it looked up a user with the `admin` role in `user_roles`, but no such user existed.
 
-### Database Permissions (Migration 025)
-- **Created migration 025** — `src/lib/db/migrations/025_admin_catalog_permissions.sql`
-  - Grants INSERT, UPDATE, DELETE on products, product_variants, product_images, product_attributes, inventory, inventory_logs to anon role
-  - Migration 022 only granted SELECT; write operations were failing with permission errors
-  - Deployed to Supabase via `npx supabase db push --linked --include-all --yes`
+**Fix:** Stateless HMAC token auth — zero database calls. Verify `ADMIN_EMAIL`/`ADMIN_PASSWORD` env vars, issue an HMAC-SHA256 signed `admin_token` cookie (signed with `ADMIN_PASSWORD`, 7-day TTL), `requireAdmin()` verifies signature + expiry inline.
 
-### Admin Dashboard Components
-- **Dashboard** `/admin` — 5 metric cards, recent orders table, low stock alerts
-- **Product listing** `/admin/products` — status filter, search, inline edit/delete, "New Product" link
-- **Inventory** `/admin/inventory` — stock adjustment inline editor, reason tracking (restock/adjustment), audit logging
-- **Orders** `/admin/orders` — status filter pills, clickable rows, order detail view with item snapshot
-- **Coupons** `/admin/coupons` — toggle active/inactive, edit drawer for create/edit
-- **Customers** `/admin/customers` — read-only list with order count, total spend, joined date
-- **AdminTopBar** component — shows admin email, logout button redirects to `/admin/login`
+**Key point:** `AdminContext` has `{ adminEmail: string }`, not a `user` field.
+</details>
 
-### Visual Design (Admin)
-- Dark sidebar: `#1C1917` (warm neutral, distinct from storefront `#FAFAF9`)
-- Clay accent: `#C4654A` for CTAs, badges, highlights
-- Professional typography: Playfair (headings), Inter (body), uppercase section labels
-- Framer Motion animations on sidebar, optimistic UI feedback ("Saved ✓" toasts)
+<details>
+<summary>Phase 5 — Performance Optimization</summary>
+
+21 performance issues identified and fixed: SQL aggregates in admin stats (was full-table scan), cart-fetch guard in Navbar, primary-image extraction pushed to DB, single nested cart query, ISR caching on shop/product pages (revalidate=60, biggest win), admin product list capped at 30, explicit column selects throughout. ~20-30% overall improvement.
+</details>
+
+<details>
+<summary>Phase 4 — Admin Platform</summary>
+
+Route-group layout isolation, email+password admin login, Shopify-style full-page product create/edit with pre-save variant/image buffering, migration 025 (catalog write permissions), full admin dashboard (products, inventory, orders, coupons, customers).
+</details>
 
 ---
 
@@ -172,35 +118,30 @@ npm run build     →  ✅ Passing
 ### Database (Live)
 ```
 Project: jxazdoawlghbfzdmwwmu.supabase.co
-Migrations: 29 (000–028, including 029 homepage_sections) ✅
-Tables: 21 (added homepage_sections for CMS) ✅
-Enums: 4 ✅
-RPC functions: 4 ✅
-CMS sections: banner, promo_block, featured_category ✅
-Seed data: 4 products, 8 variants ✅
-Permissions: anon role granted full (migrations 022–025) ✅
+Migration files: 35 (000–035; duplicate "031" numbering — see systemstatus.md caveat) ✅
+Tables: 24 (added otps, rate_limits this session) ✅
+RPC functions: 9 ✅
+RLS: enabled on every user-owned/transactional table ✅
+Permissions: anon narrowed to public reads + guest carts; authenticated scoped per-user; service_role explicit grants (migration 034) ✅
 ```
 
 ### Admin Platform (WORKING ✅)
 ```
 Login:       POST /api/admin/auth/login → HMAC-signed admin_token cookie (no DB)
-Middleware:  requireAdmin() → verifyAdminToken() inline (no DB lookup)
+Protection:  src/proxy.ts redirects unauthenticated /admin/* server-side
+Middleware:  requireAdmin() → verifyAdminToken() inline, constant-time, rate-limited
 Context:     AdminContext = { adminEmail: string }
-Dashboard:   GET /api/admin/stats → 5 metrics (SQL aggregates)
-Products:    GET/POST/PATCH/DELETE /api/admin/products/[id]
-Inventory:   PATCH /api/admin/inventory/[variantId]
-Orders:      GET/PATCH /api/admin/orders/[id]
-Coupons:     GET/POST/PATCH /api/admin/coupons/[id]
 ```
 
-### Storefront API (Working)
+### Storefront API (Working, RLS-enforced)
 ```
-GET /api/products          ✅ returns real data (status = 'active' only)
-GET /api/products/[slug]   ✅ category + search filters
-GET /api/categories        ✅ category tree
-GET/POST/PATCH/DELETE /api/cart  ✅ session-based
-GET/POST /api/wishlist     ✅ user/session-based
-POST /api/orders           ✅ full order creation with snapshots
+GET /api/products, /api/products/[slug], /api/categories     ✅ anon client, public reads
+GET/POST/PATCH/DELETE /api/cart                               ✅ anon client, session-based (see cart-merge bug above)
+GET/POST /api/wishlist                                        ✅ authenticated (JWT) client
+POST /api/addresses                                            ✅ authenticated (JWT) client
+POST /api/orders, GET /api/orders, /api/orders/[id]            ✅ RPC write + authenticated-client reads; Resend notification on create
+POST /api/auth/login, /logout, GET /api/auth/me                ✅ phone-only, service-role client (pre-auth bootstrap)
+POST /api/auth/otp/send, /verify                               🟡 built, not called by the UI
 ```
 
 ---
@@ -209,8 +150,10 @@ POST /api/orders           ✅ full order creation with snapshots
 
 1. **Only repositories call Supabase** — services and routes must not call `.from()` directly
 2. **`SUPABASE_SERVICE_ROLE_KEY` in `admin.ts` ONLY** — never import elsewhere
-3. **`.env.local` never committed** — use `.env.local.example` as template
+3. **`.env.local` never committed** — use `.env.local.example` as template (now includes `SUPABASE_JWT_SECRET`, `ORDER_NOTIFICATION_EMAIL`)
 4. **Zod schemas in `src/lib/validations/`** — no inline schemas in route files
+5. **RLS is real now** — `anon`/`authenticated` grants are least-privilege; any new authenticated-client query that joins a table needs to confirm that table actually grants `SELECT` to `authenticated` (migration 031 missed catalog tables — fixed in 035; check before assuming a grant exists)
+6. **Migration files ≠ deployment state** — this project has no automatic migration runner; every migration is written here and run manually via the Supabase SQL Editor by the user. Always ask/confirm which migrations are actually live before assuming a schema change took effect.
 
 ---
 
@@ -218,41 +161,24 @@ POST /api/orders           ✅ full order creation with snapshots
 
 1. `CLAUDE.md` — rules for this AI assistant
 2. `architectureFiles/walkthrough.md` — full project overview
-3. `architectureFiles/systemstatus.md` — complete file inventory
+3. `architectureFiles/systemstatus.md` — complete current-state file inventory (companion to this file)
 4. `architectureFiles/api-contracts.md` — endpoint documentation
+5. `AGENTS.md` — Next.js 16 breaking-changes warning + admin-auth-is-stateless warning (both non-obvious and already bit this project once each)
 
 ---
 
-## Known Deferred Items
+## Known Deferred / Open Items
 
-| Item | Phase | Risk | Notes |
-|---|---|---|---|
-| Per-user RLS policies | 3B | Low | Migration 022 disabled for simplicity; Phase 3B will add |
-| Cart → user merge on login | 3B | Low | Session cart survives; merge logic in auth flow |
-| Razorpay integration | Phase 6 | Low | Deferred; payment flow ready, provider pending |
-| Sanity CMS | Phase 7 | Low | Deferred; homepage CMS working via DB |
-| Resend email | Phase 8 | Low | Deferred; order notifications not sent yet |
-| Cloudflare R2 images | Phase 9 | Low | Deferred; CMS images uploaded to Supabase for now |
-
----
-
-## Phase 3B — What's Next (Wishlist & Auth Integration)
-
-### Phase 3B Prerequisites (all met):
-- ✅ Database live with wishlist schema
-- ✅ Phone-identity auth working in Phase 3A
-- ✅ Admin platform complete with CMS
-- ✅ Performance optimized (Phase 5 complete)
-- ✅ All API endpoints tested and fast
-
-### Phase 3B Tasks:
-1. Implement per-user RLS policies (Phase 3B auth safety)
-2. Wire wishlist toggle to storefront UI (use real API, not mock)
-3. Add wishlist persistence (user_id → wishlist_items mapping)
-4. Create `/wishlist` page with full item list + removal
-5. Add "Wishlist" link to Navbar (show count badge)
-6. Persist cart items after phone login (session → user_id merge)
-7. Test end-to-end: login → add to wishlist → checkout → order confirmation
+| Item | Priority | Notes |
+|---|---|---|
+| Guest cart → user cart merge bug | Should fix soon | `CartRepository.findByUserId` still anon-client; see "Discovered but not fixed" above |
+| OTP wired into login UI | Deferred by choice | Infrastructure complete, just disconnected; user chose phone-only for simplicity |
+| `database.types.ts` regeneration | Low urgency | Stale re: `otps`/`rate_limits`; one `as any` cast currently compensates |
+| Razorpay integration | Planned | Payment flow ready, provider pending |
+| Sanity CMS | Planned | Homepage CMS already works via DB |
+| Resend customer confirmation email | Declined for now | Needs a verified sending domain (currently sandbox-only, one fixed recipient) |
+| Cloudflare R2 images | Planned | Cloudinary active |
+| Duplicate migration "031" numbering | Cosmetic | Both files deployed correctly; just don't trust the numeric prefix as an ordering key past 030 |
 
 ---
 
@@ -262,8 +188,9 @@ POST /api/orders           ✅ full order creation with snapshots
 |---|---|
 | Project URL | https://jxazdoawlghbfzdmwwmu.supabase.co |
 | Project ID | `jxazdoawlghbfzdmwwmu` |
-| Anon key | In `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
-| Service role | In `.env.local` as `SUPABASE_SERVICE_ROLE_KEY` — server-only |
+| Anon key | In `.env.local` as `NEXT_PUBLIC_SUPABASE_ANON_KEY` (new-format `sb_publishable_...`) |
+| Service role | In `.env.local` as `SUPABASE_SERVICE_ROLE_KEY` (new-format `sb_secret_...`) — server-only |
+| JWT secret | In `.env.local` as `SUPABASE_JWT_SECRET` — used to self-sign `authenticated`-role JWTs, see `authenticatedClient.ts` |
 
 ---
 
@@ -272,43 +199,31 @@ POST /api/orders           ✅ full order creation with snapshots
 ### Database & Migrations
 | What | Where |
 |---|---|
-| All 25 migrations (source) | `src/lib/db/migrations/000–025.sql` |
-| CLI-formatted migrations | `supabase/migrations/` |
-| Generated DB types | `src/lib/db/generated/database.types.ts` (1042 lines) |
+| All migration source files | `src/lib/db/migrations/000–035*.sql` |
+| CLI-formatted migrations | `supabase/migrations/` (has gaps — see systemstatus.md) |
+| Generated DB types | `src/lib/db/generated/database.types.ts` (stale, see caveat above) |
 
 ### API Routes
 | What | Where |
 |---|---|
-| Storefront API | `src/app/api/` (products, categories, cart, wishlist, orders) |
-| Auth API | `src/app/api/auth/` (login, logout, me) |
-| Admin API | `src/app/api/admin/` (auth, products, inventory, orders, coupons, stats) |
+| Storefront API | `src/app/api/` (products, categories, cart, wishlist, addresses, orders) |
+| Auth API | `src/app/api/auth/` (login, logout, me, otp/send, otp/verify) |
+| Admin API | `src/app/api/admin/` (auth, products, inventory, orders, coupons, customers, stats, content/sections, upload) |
 
-### Admin Pages
+### Security / Middleware
 | What | Where |
 |---|---|
-| Admin layout | `src/app/admin/layout.tsx` (sidebar, topbar, auth check) |
-| Admin login | `src/app/admin/login/page.tsx` |
-| Dashboard | `src/app/admin/page.tsx` (metrics + recent orders) |
-| Products | `src/app/admin/products/page.tsx` (list, create button), `/new`, `/[id]/edit` |
-| Inventory | `src/app/admin/inventory/page.tsx` |
-| Orders | `src/app/admin/orders/page.tsx`, `/[id]/page.tsx` |
-| Coupons | `src/app/admin/coupons/page.tsx` |
-| Customers | `src/app/admin/customers/page.tsx` |
-
-### Admin Components
-| What | Where |
-|---|---|
-| Sidebar | `src/components/admin/AdminSidebar.tsx` |
-| TopBar | `src/components/admin/AdminTopBar.tsx` |
-| Product Form | `src/components/admin/ProductForm.tsx` (create + edit) |
-| Product listing | `src/components/admin/ProductTable.tsx` |
-| Inventory editor | `src/components/admin/InventoryEditor.tsx` |
+| Admin route protection | `src/proxy.ts` |
+| Admin/session middleware | `src/lib/middleware/adminMiddleware.ts`, `sessionMiddleware.ts` |
+| JWT-signed authenticated client | `src/lib/db/authenticatedClient.ts` |
+| Rate limiting | `src/lib/utils/rateLimit.ts` |
+| XSS sanitization | `src/lib/utils/sanitizeHtml.ts` |
 
 ### Repositories & Services
 | What | Where |
 |---|---|
-| Repositories | `src/lib/repositories/` (product, category, cart, wishlist, inventory, coupon, order) |
-| Services | `src/lib/services/` (same domain structure) |
+| Repositories | `src/lib/repositories/` (product, category, homepage, cart, wishlist, inventory, coupon, order, user, otp) |
+| Services | `src/lib/services/` (same domain structure, + otpService) |
 | Validations | `src/lib/validations/` (schemas for all domains) |
 | Domain types | `src/types/` (product, cart, order, user, coupon) |
 
@@ -319,4 +234,6 @@ POST /api/orders           ✅ full order creation with snapshots
 | System status & inventory | `architectureFiles/systemstatus.md` |
 | API contracts | `architectureFiles/api-contracts.md` |
 | Migration audit | `architectureFiles/migration-audit.md` |
-| Phase 2.2 audit reports | `architectureFiles/reports/01–10` |
+| Opti-phase audit (source of Opti Phases 1–3) | `architectureFiles/audit_results.md` |
+| Opti-phase plans | `prompts/Plans/opti_phase1.md`, `opti_phase2.md`, `opti_phase3.md` (+ `_implementation.md` copies) |
+| Fix log | `architectureFiles/FIXES_APPLIED.md` |
