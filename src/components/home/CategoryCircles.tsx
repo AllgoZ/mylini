@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { FadeImage } from '@/components/ui/FadeImage';
-import { getCategories } from '@/lib/api/categories';
+import { CategoryService } from '@/lib/services/categoryService';
 import { HomepageService } from '@/lib/services/homepageService';
 
 const FALLBACK_EMOJI: Record<string, string> = {
@@ -35,7 +35,7 @@ type DisplayItem = {
 
 export async function CategoryCircles() {
   const [categories, featuredSections] = await Promise.all([
-    getCategories().catch(() => []),
+    CategoryService.getWithChildren().catch(() => []),
     HomepageService.getByType('featured_category').catch(() => []),
   ])
 
