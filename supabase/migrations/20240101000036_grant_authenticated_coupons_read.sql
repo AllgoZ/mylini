@@ -1,0 +1,21 @@
+-- Migration 036: Grant `authenticated` role read access to coupons
+--
+-- Same category of bug as migrations 034/035, a third instance: migration 031's
+-- section 2 granted coupons SELECT only to `anon` (so guests can validate a coupon
+-- code at checkout), never to `authenticated`. `anon` and `authenticated` are
+-- separate Postgres roles — a grant to one never extends to the other.
+--
+-- Order detail reads (OrderRepository.findByIdForUser / admin findById) embed
+-- `coupon:coupons(id, code, type, value)` via the signed-JWT authenticated client.
+-- PostgREST needs SELECT on `coupons` to even plan that embed, even for orders
+-- where coupon_id is NULL (the embed is still part of the query), so every order
+-- detail fetch fails outright with "permission denied for table coupons" — the
+-- order list (OrderRepository.findByUserId, no coupons join) is unaffected, which
+-- is why "My Orders" works but opening any individual order 404s as "not found".
+--
+-- Confirmed live via a direct signed-JWT query reproduction:
+--   code: 42501, message: "permission denied for table coupons"
+--   hint: "Grant the required privileges to the current role with:
+--          GRANT SELECT ON public.coupons TO authenticated;"
+
+GRANT SELECT ON coupons TO authenticated;
