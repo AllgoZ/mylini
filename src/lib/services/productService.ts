@@ -56,12 +56,12 @@ export const ProductService = {
         'SLUG_CONFLICT'
       )
     }
-    if (data.description) data.description = sanitizeProductDescription(data.description)
+    if (data.description) data.description = await sanitizeProductDescription(data.description)
     return ProductRepository.create(data)
   },
 
   async update(id: string, data: ProductUpdate): Promise<void> {
-    if (data.description) data.description = sanitizeProductDescription(data.description)
+    if (data.description) data.description = await sanitizeProductDescription(data.description)
     return ProductRepository.update(id, data)
   },
 
