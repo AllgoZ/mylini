@@ -21,7 +21,11 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://res.cloudinary.com https://*.supabase.co https://images.unsplash.com https://*.r2.cloudflarestorage.com",
+  // blob: — admin image uploaders (ImageUploader.tsx) preview the just-picked file via
+  // URL.createObjectURL() before/while it uploads; without blob: here the browser
+  // silently refuses to paint that <img>, showing a broken-image icon instead of the
+  // upload-in-progress preview.
+  "img-src 'self' data: blob: https://res.cloudinary.com https://*.supabase.co https://images.unsplash.com https://*.r2.cloudflarestorage.com",
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co",
   "object-src 'none'",

@@ -50,6 +50,11 @@ export function ImageUploader({ productId, images, onSavedImagesChange, onPendin
 
     updatePending(prev => [...prev, ...newItems])
 
+    // Accumulates this call's successful saves so sort_order/is_primary for the 2nd,
+    // 3rd… file in one batch account for the 1st's save, without waiting on the parent
+    // re-render (`images` stays stale, closure-captured, for the rest of this loop).
+    const savedThisBatch: ProductImage[] = []
+
     for (const item of newItems) {
       updatePending(prev => prev.map(p => p.id === item.id ? { ...p, status: 'uploading' } : p))
       try {
@@ -58,29 +63,37 @@ export function ImageUploader({ productId, images, onSavedImagesChange, onPendin
           continue
         }
 
-        const doneCount = pendingRef.current.filter(p => p.status === 'done').length
         const isFirst = images.length === 0 && newItems[0].id === item.id
         const uploadType = isFirst ? 'main' : 'gallery'
         const { main } = await adminUploadImage(item.file, productId, uploadType)
 
-        await adminAddImage(productId, {
+        const created = await adminAddImage(productId, {
           public_url: main.public_url,
           storage_key: main.storage_key,
           storage_provider: main.storage_provider,
           width: main.width,
           height: main.height,
-          is_primary: images.length === 0 && doneCount === 0,
-          sort_order: images.length + doneCount,
+          is_primary: images.length === 0 && savedThisBatch.length === 0,
+          sort_order: images.length + savedThisBatch.length,
         })
 
-        updatePending(prev => prev.map(p => p.id === item.id ? { ...p, status: 'done', result: main } : p))
+        // Promote out of `pending` (which shows the local blob preview) into the real
+        // saved-images list (which shows the actual Cloudinary URL) — previously this
+        // only ever flipped the pending item to status: 'done' and never called
+        // onSavedImagesChange, so a successful upload never actually appeared as a
+        // real thumbnail; it just sat on its local preview until something else
+        // happened to refetch the product.
+        savedThisBatch.push(created)
+        onSavedImagesChange([...images, ...savedThisBatch])
+        URL.revokeObjectURL(item.previewUrl)
+        updatePending(prev => prev.filter(p => p.id !== item.id))
         toast.success('Image uploaded')
       } catch (e: any) {
         updatePending(prev => prev.map(p => p.id === item.id ? { ...p, status: 'error', errorMsg: e.message } : p))
         toast.error(`Upload failed: ${e.message}`)
       }
     }
-  }, [productId, images, updatePending])
+  }, [productId, images, updatePending, onSavedImagesChange])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()

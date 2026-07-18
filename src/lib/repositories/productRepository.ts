@@ -2,7 +2,7 @@ import { createClient } from '@/lib/db/server'
 import { createAdminClient } from '@/lib/db/admin'
 import { createPublicClient } from '@/lib/db/publicClient'
 import { NotFoundError } from '@/lib/utils/errors'
-import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, VariantSnapshot } from '@/types/product'
+import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, VariantSnapshot, ProductImage } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
 
 type ProductInsert = Database['public']['Tables']['products']['Insert']
@@ -396,10 +396,15 @@ export const ProductRepository = {
     if (error) throw new Error(error.message)
   },
 
-  async addImage(data: ImageInsert): Promise<void> {
+  async addImage(data: ImageInsert): Promise<ProductImage> {
     const supabase = createAdminClient()
-    const { error } = await supabase.from('product_images').insert(data as any)
+    const { data: created, error } = await supabase
+      .from('product_images')
+      .insert(data as any)
+      .select()
+      .single()
     if (error) throw new Error(error.message)
+    return created as unknown as ProductImage
   },
 
   async findImageById(imageId: string): Promise<{ storage_key: string; storage_provider: string } | null> {
