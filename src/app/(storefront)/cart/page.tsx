@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Minus, Plus, ArrowRight, ShieldCheck, Truck, ArrowLeft } from 'lucide-react';
@@ -8,14 +8,30 @@ import { useCartStore } from '@/store/useCartStore';
 import { FadeImage } from '@/components/ui/FadeImage';
 import { cartItemPrice } from '@/types/cart';
 import { toast } from 'sonner';
+import { getPublicSettings } from '@/lib/api/settings';
+
+// Same defaults as before settings existed — used until the fetch below resolves, and
+// kept as the fallback if it fails, so a settings-API hiccup never breaks the cart page.
+const DEFAULT_SHIPPING_CHARGE = 150;
+const DEFAULT_FREE_SHIPPING_THRESHOLD = 4000;
 
 export default function CartPage() {
   const { cart, loading, fetchCart, updateItem, removeItem, getSubtotal } = useCartStore();
+  const [shippingCharge, setShippingCharge] = useState(DEFAULT_SHIPPING_CHARGE);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(DEFAULT_FREE_SHIPPING_THRESHOLD);
 
   useEffect(() => { fetchCart(); }, [fetchCart]);
+  useEffect(() => {
+    getPublicSettings()
+      .then((s) => {
+        setShippingCharge(s.shipping_charge);
+        setFreeShippingThreshold(s.free_shipping_threshold);
+      })
+      .catch(() => {});
+  }, []);
 
   const subtotal = getSubtotal();
-  const shipping = subtotal > 4000 ? 0 : 150;
+  const shipping = subtotal > freeShippingThreshold ? 0 : shippingCharge;
   const total = subtotal + shipping;
   const items = cart?.items ?? [];
 
@@ -227,7 +243,7 @@ export default function CartPage() {
                   {shipping > 0 && (
                     <div className="flex items-center gap-2.5 text-[0.8rem] font-semibold text-text-mid bg-surface p-3 rounded-xl border border-border-soft">
                       <Truck size={18} className="text-clay shrink-0" />
-                      <span>Add ₹{(4000 - subtotal).toLocaleString('en-IN')} more to unlock Free Shipping</span>
+                      <span>Add ₹{(freeShippingThreshold - subtotal).toLocaleString('en-IN')} more to unlock Free Shipping</span>
                     </div>
                   )}
                 </div>

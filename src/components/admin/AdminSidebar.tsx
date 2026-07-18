@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star } from 'lucide-react'
+import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag },
   { label: 'Customers', href: '/admin/customers', icon: Users },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
 const CONTENT_NAV = [

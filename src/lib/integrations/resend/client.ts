@@ -75,10 +75,11 @@ export type OrderPlacedNotificationDetails = {
   }[]
 }
 
-// Internal admin/store-owner alert (ORDER_NOTIFICATION_EMAIL) — not a customer-facing
-// email. Fires whenever a new order is placed; see OrderService.create.
-export async function sendOrderPlacedNotification(order: OrderPlacedNotificationDetails): Promise<void> {
-  const to = process.env.ORDER_NOTIFICATION_EMAIL
+// Internal admin/store-owner alert (ORDER_NOTIFICATION_EMAIL, or the settings-panel
+// override passed via `toOverride`) — not a customer-facing email. Fires whenever a new
+// order is placed; see OrderService.create.
+export async function sendOrderPlacedNotification(order: OrderPlacedNotificationDetails, toOverride?: string | null): Promise<void> {
+  const to = toOverride || process.env.ORDER_NOTIFICATION_EMAIL
   if (!to) {
     console.warn('[Resend] ORDER_NOTIFICATION_EMAIL not set — skipping order notification email')
     return

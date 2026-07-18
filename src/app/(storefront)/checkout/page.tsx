@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { cartItemPrice } from '@/types/cart';
 import { getAddresses, createAddress, updateAddress as updateAddressApi } from '@/lib/api/addresses';
 import { validateCoupon } from '@/lib/api/coupons';
+import { getPublicSettings } from '@/lib/api/settings';
 import type { Address } from '@/types/user';
 import type { AppliedCoupon } from '@/types/coupon';
 
@@ -18,6 +19,11 @@ interface ConfirmedOrder {
   id: string
   total: number
 }
+
+// Same defaults as before settings existed — used until the fetch below resolves, and
+// kept as the fallback if it fails, so a settings-API hiccup never breaks checkout.
+const DEFAULT_SHIPPING_CHARGE = 150;
+const DEFAULT_FREE_SHIPPING_THRESHOLD = 4000;
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -32,8 +38,22 @@ export default function CheckoutPage() {
     if (!useCartStore.getState().cart) fetchCart();
   }, [fetchCart]);
 
+  const [shippingCharge, setShippingCharge] = useState(DEFAULT_SHIPPING_CHARGE);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(DEFAULT_FREE_SHIPPING_THRESHOLD);
+  const [taxRate, setTaxRate] = useState(0);
+  useEffect(() => {
+    getPublicSettings()
+      .then((s) => {
+        setShippingCharge(s.shipping_charge);
+        setFreeShippingThreshold(s.free_shipping_threshold);
+        setTaxRate(s.tax_rate);
+      })
+      .catch(() => {});
+  }, []);
+
   const subtotal = getSubtotal();
-  const shipping = subtotal > 4000 ? 0 : 150;
+  const shipping = subtotal > freeShippingThreshold ? 0 : shippingCharge;
+  const tax = Math.round((subtotal * taxRate) / 100);
 
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -41,7 +61,7 @@ export default function CheckoutPage() {
   const [couponLoading, setCouponLoading] = useState(false);
 
   const discount = appliedCoupon?.discount_amount ?? 0;
-  const total = subtotal - discount + shipping;
+  const total = subtotal - discount + shipping + tax;
 
   const handleApplyCoupon = async () => {
     const code = couponInput.trim();
@@ -569,6 +589,12 @@ export default function CheckoutPage() {
                   <span>Shipping</span>
                   <span className="text-ink font-bold">{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
                 </div>
+                {tax > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span>Tax</span>
+                    <span className="text-ink font-bold">₹{tax.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between items-end mb-6">

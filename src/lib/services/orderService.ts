@@ -2,6 +2,7 @@ import { OrderRepository, type AdminOrderRow } from '@/lib/repositories/orderRep
 import { CouponService } from './couponService'
 import { ProductRepository } from '@/lib/repositories/productRepository'
 import { UserRepository } from '@/lib/repositories/userRepository'
+import { SettingsRepository } from '@/lib/repositories/settingsRepository'
 import { sendOrderPlacedNotification } from '@/lib/integrations/resend/client'
 import { captureError } from '@/lib/utils/sentry'
 import { AppError, ValidationError } from '@/lib/utils/errors'
@@ -78,9 +79,10 @@ export const OrderService = {
     // order is already committed above — awaited so it isn't dropped by a serverless
     // function freezing post-response, but any failure here must never fail checkout.
     try {
-      const [fullOrder, customer] = await Promise.all([
+      const [fullOrder, customer, settings] = await Promise.all([
         OrderRepository.findById(order.id),
         UserRepository.findById(user_id),
+        SettingsRepository.getSettings().catch(() => null),
       ])
       await sendOrderPlacedNotification({
         orderId: fullOrder.id,
@@ -98,7 +100,7 @@ export const OrderService = {
           unitPrice: item.unit_price,
           totalPrice: item.total_price,
         })),
-      })
+      }, settings?.order_notification_email)
     } catch (err) {
       captureError(err, { source: 'OrderService.create.notify', orderId: order.id })
     }
