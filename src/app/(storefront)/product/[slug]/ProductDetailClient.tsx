@@ -550,7 +550,7 @@ export function ProductDetailClient({ product }: Props) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
+            className="fixed bottom-[76px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
           >
             <div className="w-8 h-8 bg-sage rounded-full flex items-center justify-center shrink-0">
               <ShoppingCart size={15} />

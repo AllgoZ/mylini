@@ -1,8 +1,8 @@
 export const revalidate = 60;
 
 import { HeroBanner } from '@/components/home/HeroBanner';
+import { SearchBar } from '@/components/home/SearchBar';
 import { FadeImage } from '@/components/ui/FadeImage';
-import { OfferStrip } from '@/components/home/OfferStrip';
 import { CategoryCircles } from '@/components/home/CategoryCircles';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { StorySection } from '@/components/home/StorySection';
@@ -43,12 +43,11 @@ export default async function Home() {
   const featured = (featuredData?.items ?? []).map(adaptProductListItem);
   const bannerSections = homeSections.filter((s) => s.section_type === 'banner');
   const promoBlocks = homeSections.filter((s) => s.section_type === 'promo_block');
-  const bannerSection = bannerSections[0] ?? null;
 
   return (
     <div className="flex flex-col min-h-screen">
-      <HeroBanner section={bannerSection} />
-      <OfferStrip />
+      <SearchBar />
+      <HeroBanner sections={bannerSections} />
       <CategoryCircles />
 
       {/* Best Sellers */}
