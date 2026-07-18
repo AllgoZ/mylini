@@ -1,12 +1,16 @@
 import { createClient } from '@/lib/db/server'
 import type { Cart, CartWithItems } from '@/types/cart'
 
+// Images are attached to the product (product_images.product_id), not the variant —
+// product_images.variant_id exists in the schema but is never populated by the admin
+// upload flow, so embedding images under product_variants (as this used to) always
+// resolved to an empty array via that unused FK. Nesting under `product` instead uses
+// the FK that's actually populated, matching how productRepository fetches images.
 const ITEMS_SELECT = `
   *,
   variant:product_variants!inner(
     id, sku, color, size, price_override,
-    product:products!inner(id, name, slug, base_price, sale_price),
-    images:product_images(public_url, is_primary),
+    product:products!inner(id, name, slug, base_price, sale_price, images:product_images(public_url, is_primary)),
     inventory(stock_available, low_stock_threshold)
   )
 `
@@ -62,15 +66,20 @@ export const CartRepository = {
     if (error || !cart) throw new Error('Cart not found')
 
     const rawItems: any[] = (cart as any).cart_items ?? []
-    const enrichedItems = rawItems.map((item: any) => ({
-      ...item,
-      variant: {
-        ...item.variant,
-        primary_image:
-          item.variant.images?.find((i: any) => i.is_primary)?.public_url ??
-          item.variant.images?.[0]?.public_url ?? null,
-      },
-    }))
+    const enrichedItems = rawItems.map((item: any) => {
+      const images = item.variant.product?.images ?? []
+      const { images: _droppedImages, ...productFields } = item.variant.product ?? {}
+      return {
+        ...item,
+        variant: {
+          ...item.variant,
+          product: productFields,
+          primary_image:
+            images.find((i: any) => i.is_primary)?.public_url ??
+            images[0]?.public_url ?? null,
+        },
+      }
+    })
 
     const subtotal = enrichedItems.reduce((sum: number, item: any) => {
       const price = item.variant.price_override ?? item.variant.product.sale_price ?? item.variant.product.base_price
