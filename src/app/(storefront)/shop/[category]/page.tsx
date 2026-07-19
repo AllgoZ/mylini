@@ -17,8 +17,15 @@ export default async function ShopCategoryPage({
   const sp = await searchParams;
   const categoryName = category.replace(/-/g, ' ');
 
+  // "/collections" (linked from every "View all" / "See all" on the homepage) redirects
+  // here with category="collections" — there's no real category with that slug, so the
+  // inner-join category filter always matched zero products. Treating it as "show
+  // everything" is what a Collections page is supposed to do; every real category slug
+  // is completely unaffected.
+  const categoryFilter = category === 'collections' ? undefined : category;
+
   const filters: ProductFilters = {
-    category,
+    category: categoryFilter,
     limit: 40,
     size: sp.size || undefined,
     price_min: sp.price_min ? Number(sp.price_min) : undefined,
@@ -30,7 +37,7 @@ export default async function ShopCategoryPage({
 
   const [data, metadata] = await Promise.all([
     ProductService.list(filters).catch(() => null),
-    ProductService.getFilterMetadata(category).catch(() => null),
+    ProductService.getFilterMetadata(categoryFilter).catch(() => null),
   ]);
 
   const products = (data?.items ?? []).map(adaptProductListItem);
@@ -40,13 +47,9 @@ export default async function ShopCategoryPage({
       {/* Category Header */}
       <div className="bg-surface py-12 border-b border-border-soft">
         <div className="w-full mx-auto px-4 md:px-8 lg:px-12 text-center">
-          <h1 className="font-head text-4xl md:text-5xl font-bold text-ink capitalize mb-4">
+          <h1 className="font-head text-4xl md:text-5xl font-bold text-ink capitalize">
             {categoryName}
           </h1>
-          <p className="text-text-mid text-[0.95rem] max-w-xl mx-auto">
-            Discover our beautifully handcrafted {categoryName} collection, made with premium fabrics
-            and traditional techniques for your little ones.
-          </p>
         </div>
       </div>
 

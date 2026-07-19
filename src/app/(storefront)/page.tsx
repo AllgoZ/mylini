@@ -150,7 +150,7 @@ export default async function Home() {
         <section className="w-full mt-14">
           <div className="flex items-baseline justify-between mb-5 px-4 md:px-7">
             <h2 className="font-head text-[1.5rem] font-bold text-ink tracking-[-0.02em]">Featured Collection</h2>
-            <Link href="/shop/girls-traditional" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
+            <Link href="/collections" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
               Explore all <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>

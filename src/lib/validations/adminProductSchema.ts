@@ -5,6 +5,7 @@ export const createProductSchema = z.object({
   slug: z.string().min(2).max(200).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase, alphanumeric, and hyphens only'),
   description: z.string().max(10000).optional(),
   category_id: z.string().uuid(),
+  featured_category_id: z.string().uuid().nullable().optional(),
   base_price: z.number().int().min(1),
   sale_price: z.number().int().min(1).nullable().optional(),
   is_featured: z.boolean().optional().default(false),

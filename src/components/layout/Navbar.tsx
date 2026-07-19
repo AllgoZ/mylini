@@ -57,8 +57,8 @@ export function Navbar() {
           {/* Nav Links */}
           <div className="hidden md:flex gap-6 ml-1">
             {[
-              { label: 'Girls', href: '/shop/girls-traditional' },
-              { label: 'Boys', href: '/shop/boys-traditional' },
+              { label: 'Girls', href: '/shop/girls' },
+              { label: 'Boys', href: '/shop/boys' },
               { label: 'Collections', href: '/collections' },
               { label: 'About Us', href: '/about' },
               { label: 'Contact', href: '/contact' },

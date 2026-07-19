@@ -2,7 +2,6 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { FadeImage } from '@/components/ui/FadeImage';
-import { CategoryService } from '@/lib/services/categoryService';
 import { HomepageService } from '@/lib/services/homepageService';
 
 const FALLBACK_EMOJI: Record<string, string> = {
@@ -34,33 +33,22 @@ type DisplayItem = {
 }
 
 export async function CategoryCircles() {
-  const [categories, featuredSections] = await Promise.all([
-    CategoryService.getWithChildren().catch(() => []),
-    HomepageService.getByType('featured_category').catch(() => []),
-  ])
+  // Only Featured Categories at least one active product actually carries — never Boys/
+  // Girls, which are the mandatory header-nav categories already shown up top; showing
+  // them again here would just duplicate the header. No fallback to the real category
+  // tree on purpose: if nothing is tagged yet, this section has nothing to show and
+  // should show nothing, not substitute Boys/Girls.
+  const featuredSections = await HomepageService.getFeaturedCategoriesInUse().catch(() => [])
 
-  let display: DisplayItem[]
+  if (featuredSections.length === 0) return null
 
-  if (featuredSections.length > 0) {
-    // Use CMS-managed list
-    display = featuredSections.map(s => ({
-      key: s.id,
-      name: s.title ?? '',
-      href: s.link_url ?? '/shop',
-      image_url: s.image_url,
-      slug: s.link_url?.split('/').pop(),
-    }))
-  } else {
-    // Fall back to all categories from DB
-    const leaves = categories.flatMap((c) => (c.children?.length ? c.children : [c])).slice(0, 8)
-    display = leaves.map(cat => ({
-      key: cat.id,
-      name: cat.name,
-      href: `/shop/${cat.slug}`,
-      image_url: (cat as any).image_url,
-      slug: cat.slug,
-    }))
-  }
+  const display: DisplayItem[] = featuredSections.map(s => ({
+    key: s.id,
+    name: s.title ?? '',
+    href: s.link_url ?? '/shop',
+    image_url: s.image_url,
+    slug: s.link_url?.split('/').pop(),
+  }))
 
   return (
     <div className="w-full px-4 md:px-7 mt-10">

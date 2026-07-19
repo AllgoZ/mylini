@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -137,6 +137,7 @@ export function ProductForm({ productId }: Props) {
 
   const [product, setProduct] = useState<ProductWithVariants | null>(null)
   const [categories, setCategories] = useState<CategoryTree[]>([])
+  const [featuredCategoryOptions, setFeaturedCategoryOptions] = useState<{ id: string; title: string }[]>([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -147,6 +148,7 @@ export function ProductForm({ productId }: Props) {
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [featuredCategoryId, setFeaturedCategoryId] = useState('')
   const [status, setStatus] = useState<string>('active')
   const [basePrice, setBasePrice] = useState('')
   const [salePrice, setSalePrice] = useState('')
@@ -171,6 +173,7 @@ export function ProductForm({ productId }: Props) {
   // Category creation
   const [showNewCatForm, setShowNewCatForm] = useState(false)
   const [newCatName, setNewCatName] = useState('')
+  const [newCatParentId, setNewCatParentId] = useState('')
   const [creatingCat, setCreatingCat] = useState(false)
 
   // Inline stock editing (variantId → draft value)
@@ -210,7 +213,21 @@ export function ProductForm({ productId }: Props) {
   }, [isDirty])
 
   useEffect(() => {
-    getCategories().then(cats => setCategories(cats.flatMap(c => c.children?.length ? c.children : [c])))
+    // Full tree (parents + children), not flattened — a flatMap that dropped any parent
+    // with children used to make top-level categories unselectable the moment they had
+    // sub-categories at all.
+    getCategories().then(setCategories)
+
+    // Featured Category options come from the existing Content -> Featured Categories
+    // CMS list (same endpoint that admin page already uses) — no separate management UI.
+    fetch('/api/admin/content/sections', { credentials: 'include' })
+      .then(r => r.json())
+      .then(j => setFeaturedCategoryOptions(
+        ((j.data as { id: string; title: string | null; section_type: string; is_active: boolean }[]) ?? [])
+          .filter(s => s.section_type === 'featured_category' && s.is_active)
+          .map(s => ({ id: s.id, title: s.title ?? 'Untitled' }))
+      ))
+      .catch(() => {})
 
     if (productId) {
       adminGetProduct(productId)
@@ -221,6 +238,7 @@ export function ProductForm({ productId }: Props) {
           setSlug(p.slug)
           setDescription(p.description ?? '')
           setCategoryId(p.category?.id ?? '')
+          setFeaturedCategoryId((p as any).featured_category_id ?? '')
           setStatus(p.status)
           setBasePrice(String(p.base_price))
           setSalePrice(String(p.sale_price ?? ''))
@@ -271,6 +289,7 @@ export function ProductForm({ productId }: Props) {
         name, slug,
         description: description || undefined,
         category_id: categoryId,
+        featured_category_id: featuredCategoryId || null,
         base_price: Number(basePrice),
         sale_price: salePrice ? Number(salePrice) : null,
         is_featured: isFeatured, is_best_seller: isBestSeller, is_new_arrival: isNewArrival,
@@ -450,10 +469,11 @@ export function ProductForm({ productId }: Props) {
     if (!newCatName.trim()) return
     setCreatingCat(true)
     try {
-      const cat = await adminCreateCategory(newCatName.trim())
+      const cat = await adminCreateCategory(newCatName.trim(), newCatParentId || undefined)
       setCategories(prev => [...prev, cat as any])
       setCategoryId(cat.id)
       setNewCatName('')
+      setNewCatParentId('')
       setShowNewCatForm(false)
       toast.success(`Category "${cat.name}" created`)
       dirty()
@@ -778,29 +798,61 @@ export function ProductForm({ productId }: Props) {
                 setCategoryId(e.target.value); dirty()
               }}>
                 <option value="">Select a category…</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {categories.map(c => (
+                  <Fragment key={c.id}>
+                    <option value={c.id}>{c.name}</option>
+                    {(c.children ?? []).map(child => (
+                      <option key={child.id} value={child.id}>— {child.name}</option>
+                    ))}
+                  </Fragment>
+                ))}
                 <option value="__new__">+ Create new category…</option>
               </select>
               {showNewCatForm && (
-                <div className="flex gap-2 mt-2 items-center">
-                  <input
-                    autoFocus
-                    className={INPUT + ' flex-1'}
-                    placeholder="New category name…"
-                    value={newCatName}
-                    onChange={e => setNewCatName(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory(); if (e.key === 'Escape') { setShowNewCatForm(false); setNewCatName('') } }}
-                  />
-                  <button onClick={handleCreateCategory} disabled={!newCatName.trim() || creatingCat}
-                    className="px-3.5 py-2.5 bg-[#C4654A] text-white text-[0.82rem] font-bold rounded-xl hover:bg-[#A0523A] disabled:opacity-50 transition-colors whitespace-nowrap">
-                    {creatingCat ? 'Creating…' : 'Create'}
-                  </button>
-                  <button onClick={() => { setShowNewCatForm(false); setNewCatName('') }}
-                    className="p-2.5 text-[#9CA3AF] hover:text-[#374151] border border-[#E5E7EB] rounded-xl transition-colors">
-                    <X size={14} />
-                  </button>
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex gap-2 items-center">
+                    <input
+                      autoFocus
+                      className={INPUT + ' flex-1'}
+                      placeholder="New category name…"
+                      value={newCatName}
+                      onChange={e => setNewCatName(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory(); if (e.key === 'Escape') { setShowNewCatForm(false); setNewCatName(''); setNewCatParentId('') } }}
+                    />
+                    <button onClick={handleCreateCategory} disabled={!newCatName.trim() || creatingCat}
+                      className="px-3.5 py-2.5 bg-[#C4654A] text-white text-[0.82rem] font-bold rounded-xl hover:bg-[#A0523A] disabled:opacity-50 transition-colors whitespace-nowrap">
+                      {creatingCat ? 'Creating…' : 'Create'}
+                    </button>
+                    <button onClick={() => { setShowNewCatForm(false); setNewCatName(''); setNewCatParentId('') }}
+                      className="p-2.5 text-[#9CA3AF] hover:text-[#374151] border border-[#E5E7EB] rounded-xl transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                  <select
+                    className={INPUT}
+                    value={newCatParentId}
+                    onChange={e => setNewCatParentId(e.target.value)}
+                  >
+                    <option value="">Top-level category (e.g. Boys, Girls)</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>Sub-category under &quot;{c.name}&quot;</option>
+                    ))}
+                  </select>
                 </div>
               )}
+            </Field>
+            <Field label="Featured Category (optional)">
+              <select className={INPUT} value={featuredCategoryId} onChange={e => {
+                setFeaturedCategoryId(e.target.value); dirty()
+              }}>
+                <option value="">None</option>
+                {featuredCategoryOptions.map(f => (
+                  <option key={f.id} value={f.id}>{f.title}</option>
+                ))}
+              </select>
+              <p className="text-[0.75rem] text-[#9CA3AF] mt-1.5">
+                Shown on the homepage&apos;s &quot;Shop By Category&quot; only when at least one product carries it. Manage the list itself under Content → Featured Categories.
+              </p>
             </Field>
             <div className="pt-1 border-t border-[#F3F4F6]">
               <Toggle checked={chargeTax} onChange={() => { setChargeTax(v => !v); dirty() }}

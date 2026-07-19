@@ -6,6 +6,10 @@ export const HomepageService = {
     return HomepageRepository.findByType(type)
   },
 
+  async getFeaturedCategoriesInUse(): Promise<HomepageSection[]> {
+    return HomepageRepository.findFeaturedCategoriesInUse()
+  },
+
   async getByTypes(types: HomepageSectionType[]): Promise<HomepageSection[]> {
     return HomepageRepository.findByTypes(types)
   },

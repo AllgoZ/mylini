@@ -29,6 +29,37 @@ export const HomepageRepository = {
     return (data ?? []) as HomepageSection[]
   },
 
+  // "Shop By Category" should only show a Featured Category tile that at least one
+  // active product actually carries — two small queries (distinct in-use ids, then the
+  // matching rows) rather than a single complex join; both tables are small so this
+  // stays fast either way.
+  async findFeaturedCategoriesInUse(): Promise<HomepageSection[]> {
+    const supabase = await db()
+
+    const { data: productRows, error: productErr } = await supabase
+      .from('products')
+      .select('featured_category_id')
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .not('featured_category_id', 'is', null)
+
+    if (productErr) throw new Error(productErr.message)
+
+    const idsInUse = [...new Set((productRows ?? []).map((p: any) => p.featured_category_id))]
+    if (idsInUse.length === 0) return []
+
+    const { data, error } = await supabase
+      .from('homepage_sections')
+      .select('*')
+      .eq('section_type', 'featured_category')
+      .eq('is_active', true)
+      .in('id', idsInUse)
+      .order('sort_order', { ascending: true })
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as HomepageSection[]
+  },
+
   // Fetch several section types in one round trip (e.g. banner + promo_block for the
   // homepage) instead of one findByType() call per type. Ordered by type then sort_order
   // so filtering the result by type afterward preserves each type's internal ordering.
