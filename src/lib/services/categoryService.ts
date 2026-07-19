@@ -13,4 +13,16 @@ export const CategoryService = {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     return CategoryRepository.create(name, slug, parentId)
   },
+
+  async getAllForAdmin() {
+    return CategoryRepository.findAllForAdmin()
+  },
+
+  async update(id: string, patch: Parameters<typeof CategoryRepository.update>[1]) {
+    return CategoryRepository.update(id, patch)
+  },
+
+  async remove(id: string) {
+    return CategoryRepository.remove(id)
+  },
 }
