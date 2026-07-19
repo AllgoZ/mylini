@@ -9,7 +9,7 @@ export function Footer() {
           {/* Brand Col */}
           <div>
             <div className="font-head text-2xl font-bold text-white mb-2.5">
-              My<span className="text-clay-soft">lini</span>
+              Mylini
             </div>
             <p className="text-[0.85rem] leading-[1.75] max-w-[260px] mb-5">
               From Coimbatore, to your little ones worldwide. Crafting timeless ethnic luxury since 2016.
