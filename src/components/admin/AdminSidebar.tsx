@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star, Settings, FolderTree } from 'lucide-react'
+import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star, Settings, FolderTree, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
@@ -20,6 +20,7 @@ const CONTENT_NAV = [
   { label: 'Homepage Banner', href: '/admin/content/banner', icon: ImageIcon },
   { label: 'Promo Blocks', href: '/admin/content/promo-blocks', icon: LayoutTemplate },
   { label: 'Featured Categories', href: '/admin/content/featured-categories', icon: Star },
+  { label: 'About Us', href: '/admin/about', icon: Info },
 ]
 
 interface Props {
