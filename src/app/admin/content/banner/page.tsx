@@ -2,12 +2,52 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Save, Trash2, Plus, ChevronUp, ChevronDown, Eye } from 'lucide-react'
+import { Save, Trash2, Plus, ChevronUp, ChevronDown, Eye, Move } from 'lucide-react'
 import type { HomepageSection } from '@/types/homepage'
 import { CmsImageUpload } from '@/components/admin/CmsImageUpload'
+import { BannerPreviewPanel } from '@/components/admin/BannerPreviewPanel'
 
 const INPUT = 'w-full bg-[#FAFAF9] border border-[#E7E5E4] rounded-xl px-3.5 py-2.5 text-[0.875rem] text-[#1C1917] outline-none focus:border-[#C4654A] transition-all'
 const LABEL = 'block text-[0.78rem] font-semibold text-[#78716C] mb-1.5'
+
+// 3x3 focal-point grid — same 9 keys as HeroBanner's OBJECT_POSITION_CLASS, so whatever
+// gets picked here is exactly what the live storefront crop will honor.
+const POSITION_GRID: { key: string; label: string }[] = [
+  { key: 'left-top', label: 'Top left' },
+  { key: 'top', label: 'Top' },
+  { key: 'right-top', label: 'Top right' },
+  { key: 'left', label: 'Left' },
+  { key: 'center', label: 'Center' },
+  { key: 'right', label: 'Right' },
+  { key: 'left-bottom', label: 'Bottom left' },
+  { key: 'bottom', label: 'Bottom' },
+  { key: 'right-bottom', label: 'Bottom right' },
+]
+
+function PositionPicker({ value, onChange }: { value: string; onChange: (pos: string) => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="grid grid-cols-3 gap-1 w-[72px] shrink-0">
+        {POSITION_GRID.map(p => (
+          <button
+            key={p.key}
+            type="button"
+            title={p.label}
+            onClick={() => onChange(p.key)}
+            className={`w-6 h-6 rounded-md border transition-colors ${
+              (value || 'center') === p.key
+                ? 'bg-[#C4654A] border-[#C4654A]'
+                : 'bg-white border-[#E7E5E4] hover:border-[#C4654A]'
+            }`}
+          />
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 text-[0.72rem] text-[#78716C]">
+        <Move size={12} /> Focal point — which part of the image stays visible when cropped
+      </div>
+    </div>
+  )
+}
 
 const EMPTY: Omit<HomepageSection, 'id' | 'created_at' | 'updated_at'> = {
   section_type: 'banner',
@@ -154,15 +194,54 @@ function BannerCard({
             </div>
           </div>
 
-          <div className="border-t border-[#E7E5E4] pt-4">
+          <div className="border-t border-[#E7E5E4] pt-4 space-y-3">
             <CmsImageUpload
               value={form.image_url}
               onChange={url => setForm(f => ({ ...f, image_url: url }))}
               folder="banner"
-              label="Slide Image"
-              aspectHint="Recommended: 1600 × 640 px (landscape)"
+              label="Desktop / Laptop Image"
+              aspectHint="Recommended: 1920 × 640 px (landscape, ~3:1)"
             />
+            {form.image_url && (
+              <PositionPicker
+                value={String(form.metadata.desktop_image_position ?? 'center')}
+                onChange={pos => setForm(f => ({ ...f, metadata: { ...f.metadata, desktop_image_position: pos } }))}
+              />
+            )}
           </div>
+
+          <div className="border-t border-[#E7E5E4] pt-4 space-y-3">
+            <CmsImageUpload
+              value={String(form.metadata.mobile_image_url ?? '')}
+              onChange={url => setForm(f => ({ ...f, metadata: { ...f.metadata, mobile_image_url: url } }))}
+              folder="banner"
+              label="Mobile Image (optional)"
+              aspectHint="Recommended: 1080 × 1350 px (portrait, ~4:5)"
+            />
+            <p className="text-[0.72rem] text-[#A8A29E]">
+              Shown only on phones — the desktop/laptop image is used on phones too if this is left empty.
+            </p>
+            {Boolean(form.metadata.mobile_image_url) && (
+              <PositionPicker
+                value={String(form.metadata.mobile_image_position ?? 'center')}
+                onChange={pos => setForm(f => ({ ...f, metadata: { ...f.metadata, mobile_image_position: pos } }))}
+              />
+            )}
+          </div>
+
+          {Boolean(form.image_url || form.metadata.mobile_image_url) && (
+            <div className="border-t border-[#E7E5E4] pt-4">
+              <p className={LABEL}>Live Preview</p>
+              <BannerPreviewPanel
+                title={form.title}
+                badgeText={form.badge_text}
+                desktopImageUrl={form.image_url}
+                mobileImageUrl={String(form.metadata.mobile_image_url ?? '')}
+                desktopPosition={String(form.metadata.desktop_image_position ?? 'center')}
+                mobilePosition={String(form.metadata.mobile_image_position ?? 'center')}
+              />
+            </div>
+          )}
 
           <div className="border-t border-[#E7E5E4] pt-4">
             <p className="text-[0.78rem] font-semibold text-[#78716C] mb-3">Secondary Button &amp; Offer Badge</p>

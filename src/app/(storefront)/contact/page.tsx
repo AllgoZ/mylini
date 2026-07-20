@@ -104,7 +104,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Email Support</h3>
-                  <a href="mailto:love@mylini.com" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">love@mylini.com</a>
+                  <a href="mailto:team@mylini.com" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">team@mylini.com</a>
                   <p className="text-[0.78rem] text-text-light mt-0.5">We reply in 24 hours</p>
                 </div>
               </div>
@@ -115,8 +115,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Helpline Number</h3>
-                  <a href="tel:+919876543210" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">+91 98765 43210</a>
-                  <p className="text-[0.78rem] text-text-light mt-0.5">Mon–Sat, 10 AM to 6 PM IST</p>
+                  <a href="tel:+919500151606" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">+91 95001 51606</a>
+                  <p className="text-[0.78rem] text-text-light mt-0.5">Mon–Sat, 10 AM to 7 PM IST</p>
                 </div>
               </div>
 
@@ -125,10 +125,10 @@ export default function ContactPage() {
                   <MapPin className="text-clay w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Designer Studio</h3>
+                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Address</h3>
                   <p className="text-[0.92rem] font-bold text-ink">Mylini Ethnic Wear Studio</p>
                   <p className="text-[0.82rem] text-text-mid leading-relaxed">
-                    12, Khader Nawaz Khan Road, Nungambakkam,<br />Chennai, Tamil Nadu - 600006
+                    122, Annai Sathya Layout, Karunanidhi Nagar,<br />Ramanadhapuram, Coimbatore - 641045
                   </p>
                 </div>
               </div>
@@ -138,9 +138,9 @@ export default function ContactPage() {
                   <Clock className="text-clay w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Customer Support Hours</h3>
-                  <p className="text-[0.92rem] font-semibold text-ink">10:00 AM – 06:00 PM (IST)</p>
-                  <p className="text-[0.78rem] text-text-light mt-0.5">Closed on Sundays & National Holidays</p>
+                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">We&apos;re Open</h3>
+                  <p className="text-[0.82rem] text-text-mid leading-relaxed">Our store has re-opened for shopping, exchanges</p>
+                  <p className="text-[0.92rem] font-semibold text-ink mt-1">Monday – Saturday, 10 AM to 7 PM</p>
                 </div>
               </div>
             </div>

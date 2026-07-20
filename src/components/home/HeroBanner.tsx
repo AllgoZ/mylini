@@ -11,6 +11,22 @@ interface Props {
   sections: HomepageSection[]
 }
 
+// Tailwind's build-time scanner only picks up class names that appear as literal
+// strings somewhere in the source — a template-literal-constructed `object-${x}` would
+// never be generated in the production CSS bundle. Every value this map can return must
+// stay written out in full here for that reason.
+export const OBJECT_POSITION_CLASS: Record<string, string> = {
+  center: 'object-center',
+  top: 'object-top',
+  bottom: 'object-bottom',
+  left: 'object-left',
+  right: 'object-right',
+  'left-top': 'object-left-top',
+  'left-bottom': 'object-left-bottom',
+  'right-top': 'object-right-top',
+  'right-bottom': 'object-right-bottom',
+}
+
 function Slide({ section }: { section: HomepageSection | null }) {
   const title = section?.title ?? 'Comfort in Every Stitch.'
   const subtitle = section?.subtitle ?? 'Timeless ethnic wear crafted for your little ones — festivals, weddings & everyday magic.'
@@ -19,20 +35,35 @@ function Slide({ section }: { section: HomepageSection | null }) {
   const linkText = section?.link_text ?? 'Shop Now'
   const imageUrl = section?.image_url ?? null
   const meta = (section?.metadata ?? {}) as Record<string, string>
+  const mobileImageUrl = meta.mobile_image_url || imageUrl
+  // Focal point — which part of the image survives the object-cover crop. One of
+  // Tailwind's 9 object-position keywords (center/top/bottom/left/right/left-top/...),
+  // set per-image in the admin banner editor's position picker; defaults to center,
+  // matching the original always-centered behavior.
+  const mobilePosition = meta.mobile_image_position || 'center'
+  const desktopPosition = meta.desktop_image_position || 'center'
   const secondaryLinkUrl = meta.secondary_link_url ?? '/collections'
   const secondaryLinkText = meta.secondary_link_text ?? 'View Collections'
   const offerText = meta.offer_text ?? '₹300 OFF on orders above ₹2500'
 
   return (
     <div className="snap-start shrink-0 w-full rounded-[28px] overflow-hidden bg-gradient-to-br from-[#3D1A0A] via-[#7A3520] to-[#E8927A] grid grid-cols-1 md:grid-cols-[1fr_1.1fr] min-h-[50vh] max-h-[65vh] md:min-h-[220px] md:max-h-none relative">
+      {/* Separate art-directed images per breakpoint (CSS visibility toggle, not JS —
+          SSR-safe, no layout shift) instead of one image object-cover-cropped into both
+          an extreme portrait box (mobile) and an extreme landscape box (desktop). Falls
+          back to the desktop image on mobile when no dedicated mobile image is set, so
+          existing single-image banners keep rendering exactly as before. */}
+      {mobileImageUrl && (
+        <Image src={mobileImageUrl} alt="" fill priority className={`object-cover ${OBJECT_POSITION_CLASS[mobilePosition] ?? 'object-center'} md:hidden`} sizes="100vw" />
+      )}
       {imageUrl && (
-        <>
-          <Image src={imageUrl} alt="" fill priority className="object-cover" sizes="100vw" />
-          {/* Left-to-right darkening so white overlay text stays legible regardless of
-              what the uploaded photo looks like, while the right side (badges/offer
-              panel on desktop) still shows the photo clearly. */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
-        </>
+        <Image src={imageUrl} alt="" fill priority className={`object-cover ${OBJECT_POSITION_CLASS[desktopPosition] ?? 'object-center'} hidden md:block`} sizes="100vw" />
+      )}
+      {(mobileImageUrl || imageUrl) && (
+        // Left-to-right darkening so white overlay text stays legible regardless of
+        // what the uploaded photo looks like, while the right side (badges/offer
+        // panel on desktop) still shows the photo clearly.
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
       )}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\'120\' height=\'120\' viewBox=\'0 0 120 120\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Ccircle cx=\'60\' cy=\'60\' r=\'50\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'.4\' stroke-opacity=\'.08\'/%3E%3Ccircle cx=\'60\' cy=\'60\' r=\'30\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'.4\' stroke-opacity=\'.06\'/%3E%3C/svg%3E')] bg-[center_300px] pointer-events-none" />
 
