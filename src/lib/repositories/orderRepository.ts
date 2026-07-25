@@ -136,7 +136,7 @@ export const OrderRepository = {
     const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, subtotal, discount, total, created_at, tracking_number, tracking_url, items:order_items(quantity, product_name_snapshot, image_snapshot)')
+      .select('id, status, subtotal, discount, total, created_at, tracking_number, tracking_url, items:order_items(quantity, product_name_snapshot, image_snapshot, variant:product_variants(product:products(images:product_images(public_url, is_primary))))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -150,10 +150,17 @@ export const OrderRepository = {
       total: o.total,
       created_at: o.created_at,
       item_count: (o.items ?? []).reduce((n: number, i: any) => n + i.quantity, 0),
-      items_preview: (o.items ?? []).slice(0, 3).map((i: any) => ({
-        product_name_snapshot: i.product_name_snapshot ?? '',
-        image_snapshot: i.image_snapshot ?? null,
-      })),
+      items_preview: (o.items ?? []).slice(0, 3).map((i: any) => {
+        // Older orders (placed before image_snapshot started saving correctly) have
+        // image_snapshot: null permanently — fall back to the variant's current
+        // product image via the same join used by findByIdForUser.
+        const images = i.variant?.product?.images ?? []
+        const fallbackImage = images.find((img: any) => img.is_primary)?.public_url ?? images[0]?.public_url ?? null
+        return {
+          product_name_snapshot: i.product_name_snapshot ?? '',
+          image_snapshot: i.image_snapshot ?? fallbackImage,
+        }
+      }),
     }))
   },
 
