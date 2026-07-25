@@ -247,7 +247,7 @@ export default function CheckoutPage() {
           <h1 className="font-head text-3xl font-bold text-ink mb-2">Order Confirmed!</h1>
           <p className="text-[0.8rem] font-mono text-text-mid mb-2">Order #{confirmedOrder.id.slice(0, 8).toUpperCase()}</p>
           <p className="text-text-mid font-medium mb-2">
-            Total paid: <span className="font-bold text-ink">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
+            Order Total: <span className="font-bold text-ink">₹{confirmedOrder.total.toLocaleString('en-IN')}</span>
           </p>
           <p className="text-[0.85rem] text-text-light mb-8">
             Thank you for shopping with MYLINI. We'll keep you updated on your delivery.

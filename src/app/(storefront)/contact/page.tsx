@@ -126,7 +126,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Address</h3>
-                  <p className="text-[0.92rem] font-bold text-ink">Mylini Ethnic Wear Studio</p>
+                  <p className="text-[0.92rem] font-bold text-ink">Mylini Ventures</p>
                   <p className="text-[0.82rem] text-text-mid leading-relaxed">
                     122, Annai Sathya Layout, Karunanidhi Nagar,<br />Ramanadhapuram, Coimbatore - 641045
                   </p>

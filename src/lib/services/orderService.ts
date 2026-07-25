@@ -42,9 +42,17 @@ export const OrderService = {
       couponId = applied.coupon.id
     }
 
-    const total = subtotal - discount
+    // 4. Shipping/tax — computed server-side from store settings (never trusting a
+    // client-sent amount, same as subtotal above), mirroring the storefront checkout
+    // page's own formula exactly so the persisted total always matches what the
+    // customer was shown before placing the order.
+    const settings = await SettingsRepository.getSettings()
+    const shipping = subtotal > settings.free_shipping_threshold ? 0 : settings.shipping_charge
+    const tax = Math.round((subtotal * settings.tax_rate) / 100)
 
-    // 4. Build order item snapshots
+    const total = subtotal - discount + shipping + tax
+
+    // 5. Build order item snapshots
     const orderItems = items.map((item) => {
       const v = variantDetails[item.variant_id]
       const variantLabel = [v.color, v.size].filter(Boolean).join(' / ')
@@ -60,9 +68,9 @@ export const OrderService = {
       }
     })
 
-    // 5. Create order + items + decrement stock + record coupon usage, atomically —
+    // 6. Create order + items + decrement stock + record coupon usage, atomically —
     // stock validation, race-condition guarding, and rollback-on-failure all happen
-    // inside create_order_transactional (migration 030) instead of a sequence of
+    // inside create_order_transactional (migration 030/040) instead of a sequence of
     // separate round trips here.
     const order = await OrderRepository.createTransactional({
       user_id,
@@ -70,19 +78,20 @@ export const OrderService = {
       coupon_id: couponId ?? null,
       subtotal,
       discount,
+      shipping,
+      tax,
       total,
       notes: notes ?? null,
       items: orderItems,
     })
 
-    // 6. Notify the store owner (ORDER_NOTIFICATION_EMAIL) that a new order came in. The
+    // 7. Notify the store owner (ORDER_NOTIFICATION_EMAIL) that a new order came in. The
     // order is already committed above — awaited so it isn't dropped by a serverless
     // function freezing post-response, but any failure here must never fail checkout.
     try {
-      const [fullOrder, customer, settings] = await Promise.all([
+      const [fullOrder, customer] = await Promise.all([
         OrderRepository.findById(order.id),
         UserRepository.findById(user_id),
-        SettingsRepository.getSettings().catch(() => null),
       ])
       await sendOrderPlacedNotification({
         orderId: fullOrder.id,
@@ -100,7 +109,7 @@ export const OrderService = {
           unitPrice: item.unit_price,
           totalPrice: item.total_price,
         })),
-      }, settings?.order_notification_email)
+      }, settings.order_notification_email)
     } catch (err) {
       captureError(err, { source: 'OrderService.create.notify', orderId: order.id })
     }

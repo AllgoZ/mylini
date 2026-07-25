@@ -19,6 +19,8 @@ export type CreateOrderTransactionalInput = {
   coupon_id: string | null
   subtotal: number
   discount: number
+  shipping: number
+  tax: number
   total: number
   notes: string | null
   items: {
@@ -44,7 +46,7 @@ export const OrderRepository = {
       .single()
 
     if (error) throw new Error(error.message)
-    return order
+    return order as unknown as Order
   },
 
   async addItems(items: OrderItemInsert[]): Promise<void> {
@@ -66,6 +68,8 @@ export const OrderRepository = {
       p_coupon_id: input.coupon_id,
       p_subtotal: input.subtotal,
       p_discount: input.discount,
+      p_shipping: input.shipping,
+      p_tax: input.tax,
       p_total: input.total,
       p_notes: input.notes,
       p_items: input.items,
@@ -117,7 +121,7 @@ export const OrderRepository = {
       .from('orders')
       .select(`
         *,
-        items:order_items(*),
+        items:order_items(*, variant:product_variants(product:products(images:product_images(public_url, is_primary)))),
         address:addresses!inner(*),
         coupon:coupons(id, code, type, value)
       `)

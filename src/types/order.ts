@@ -2,12 +2,22 @@ import type { Database } from '@/lib/db/generated/database.types'
 import type { Address } from './user'
 import type { Coupon } from './coupon'
 
-export type Order = Database['public']['Tables']['orders']['Row']
+// shipping_charge/tax_amount (migration 040) postdate the last database.types.ts
+// generation — same situation as otps/rate_limits/store_settings, until types are
+// regenerated against the live schema after the migration is applied.
+export type Order = Database['public']['Tables']['orders']['Row'] & {
+  shipping_charge: number
+  tax_amount: number
+}
 export type OrderItem = Database['public']['Tables']['order_items']['Row']
 export type OrderStatus = Database['public']['Enums']['order_status']
 
 export type OrderWithItems = Order & {
-  items: OrderItem[]
+  // `variant` is only populated by OrderRepository.findByIdForUser — a fallback to the
+  // variant's current product image for orders placed before image_snapshot was fixed
+  // to actually save (older order_items rows have image_snapshot: null permanently,
+  // since it's a point-in-time snapshot column).
+  items: (OrderItem & { variant?: { product?: { images?: { public_url: string; is_primary: boolean }[] | null } | null } | null })[]
   address: Address
   coupon: Pick<Coupon, 'id' | 'code' | 'type' | 'value'> | null
   tracking_number?: string | null

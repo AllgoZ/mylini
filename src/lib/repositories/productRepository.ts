@@ -456,12 +456,14 @@ export const ProductRepository = {
 
   async findVariantsByIds(variantIds: string[]): Promise<VariantSnapshot[]> {
     const supabase = await createClient()
+    // Images are attached to the product (product_images.product_id), not the variant —
+    // product_images.variant_id exists in the schema but is never populated by the admin
+    // panel. Same fix as cartRepository.ts's product join.
     const { data, error } = await supabase
       .from('product_variants')
       .select(`
         id, sku, color, size, price_override,
-        product:products!inner(name, base_price, sale_price),
-        images:product_images(public_url, is_primary)
+        product:products!inner(name, base_price, sale_price, images:product_images(public_url, is_primary))
       `)
       .in('id', variantIds)
 
@@ -474,7 +476,7 @@ export const ProductRepository = {
       size: v.size,
       price: v.price_override ?? v.product.sale_price ?? v.product.base_price,
       productName: v.product.name,
-      image: v.images?.find((i: any) => i.is_primary)?.public_url ?? v.images?.[0]?.public_url ?? null,
+      image: v.product.images?.find((i: any) => i.is_primary)?.public_url ?? v.product.images?.[0]?.public_url ?? null,
     }))
   },
 }
