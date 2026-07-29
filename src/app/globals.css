@@ -24,7 +24,7 @@
   --color-text: #35200F;        /* --dark-coffee-3 (Highly readable primary text) */
   --color-text-mid: #392819;    /* --dark-coffee (Clear and sharp secondary text) */
   --color-text-light: #605045;  /* Muted but high-contrast text for secondary elements */
-  --color-canvas: #F9F4F1;      /* --parchment (Extremely soothing background) */
+  --color-canvas: #fff3e6;      /* --parchment (Extremely soothing background) */
   --color-canvas-warm: #FAF5F2; /* Soothing warm parchment background */
   --color-surface: #FAF5F2;     /* Parchment cards */
   --color-surface-2: #EEDBCD;   /* --powder-petal */
@@ -103,7 +103,7 @@ html {
 }
 
 :root {
-  --background: #F9F4F1;        /* --parchment */
+  --background: #fff3e6;        /* --parchment */
   --foreground: #2B170B;        /* --dark-coffee-2 */
   --card: #FAF5F2;
   --card-foreground: #2B170B;
