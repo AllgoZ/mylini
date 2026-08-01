@@ -114,7 +114,7 @@ export default function OrderDetailPage() {
                   <div key={step.label} className="flex flex-col items-center gap-2 z-10 flex-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
                       done ? 'bg-clay border-clay text-white'
-                        : active ? 'bg-white border-clay text-clay shadow-[0_0_0_3px_rgba(196,101,74,0.15)]'
+                        : active ? 'bg-white border-clay text-clay shadow-[0_0_0_3px_rgba(62,15,47,0.15)]'
                           : 'bg-white border-border-soft text-text-light'
                     }`}>
                       <Icon size={14} />

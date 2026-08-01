@@ -12,6 +12,7 @@ import { cartItemPrice } from '@/types/cart';
 import { getAddresses, createAddress, updateAddress as updateAddressApi } from '@/lib/api/addresses';
 import { validateCoupon } from '@/lib/api/coupons';
 import { getPublicSettings } from '@/lib/api/settings';
+import { AddressAutocomplete } from '@/components/checkout/AddressAutocomplete';
 import type { Address } from '@/types/user';
 import type { AppliedCoupon } from '@/types/coupon';
 
@@ -125,6 +126,13 @@ export default function CheckoutPage() {
 
   const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  // Numeric-only fields — strip non-digits as the user types and cap length, same
+  // pattern already proven in PhoneModal.tsx, instead of relying on native pattern alone.
+  const setPhone = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }));
+  const setPincode = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(prev => ({ ...prev, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) }));
 
   const startNewAddress = () => {
     setSelectedAddressId(null);
@@ -314,7 +322,20 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="block text-[0.8rem] font-bold text-text-mid mb-1.5">Mobile Number *</label>
-                    <input required type="tel" value={form.phone} onChange={set('phone')} className={inputCls} placeholder="10-digit mobile number" pattern="[0-9]{10}" />
+                    <input
+                      required
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={form.phone}
+                      onChange={setPhone}
+                      className={inputCls}
+                      placeholder="10-digit mobile number"
+                      pattern="[0-9]{10}"
+                    />
+                    {form.phone.length > 0 && form.phone.length !== 10 && (
+                      <p className="text-destructive text-[0.8rem] font-semibold mt-1.5">Enter a valid 10-digit mobile number</p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -334,7 +355,7 @@ export default function CheckoutPage() {
                         onClick={() => setSelectedAddressId(addr.id)}
                         className={`text-left flex items-start gap-3 p-4 rounded-xl border-[1.5px] transition-all ${
                           selectedAddressId === addr.id
-                            ? 'border-clay bg-[#FDF7F3]'
+                            ? 'border-clay bg-rose-pale'
                             : 'border-border-soft hover:border-clay-soft'
                         }`}
                       >
@@ -379,7 +400,20 @@ export default function CheckoutPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-2">
                         <label className="block text-[0.8rem] font-bold text-text-mid mb-1.5">Address Line 1 *</label>
-                        <input required type="text" value={form.line1} onChange={set('line1')} className={inputCls} placeholder="House / Flat no., Street name" />
+                        <AddressAutocomplete
+                          required
+                          value={form.line1}
+                          onChange={(v) => setForm(prev => ({ ...prev, line1: v }))}
+                          onPlaceSelect={(place) => setForm(prev => ({
+                            ...prev,
+                            line1: place.line1 || prev.line1,
+                            city: place.city || prev.city,
+                            state: place.state || prev.state,
+                            pincode: place.pincode || prev.pincode,
+                          }))}
+                          className={inputCls}
+                          placeholder="House / Flat no., Street name"
+                        />
                       </div>
                       <div className="col-span-2">
                         <label className="block text-[0.8rem] font-bold text-text-mid mb-1.5">Address Line 2 (optional)</label>
@@ -395,7 +429,20 @@ export default function CheckoutPage() {
                       </div>
                       <div className="col-span-2 sm:col-span-1">
                         <label className="block text-[0.8rem] font-bold text-text-mid mb-1.5">PIN Code *</label>
-                        <input required type="text" value={form.pincode} onChange={set('pincode')} className={inputCls} placeholder="6-digit PIN" pattern="[0-9]{6}" maxLength={6} />
+                        <input
+                          required
+                          type="text"
+                          inputMode="numeric"
+                          value={form.pincode}
+                          onChange={setPincode}
+                          className={inputCls}
+                          placeholder="6-digit PIN"
+                          pattern="[0-9]{6}"
+                          maxLength={6}
+                        />
+                        {form.pincode.length > 0 && form.pincode.length !== 6 && (
+                          <p className="text-destructive text-[0.8rem] font-semibold mt-1.5">Enter a valid 6-digit PIN code</p>
+                        )}
                       </div>
                     </div>
 
@@ -453,14 +500,14 @@ export default function CheckoutPage() {
                 <h2 className="font-head text-xl font-bold text-ink mb-1">Payment</h2>
                 <p className="text-[0.8rem] text-text-light font-medium mb-5">All transactions are secure and encrypted.</p>
                 <div className="flex flex-col border border-border-soft rounded-xl overflow-hidden bg-surface">
-                  <div className="flex items-center gap-3 p-4 bg-[#FDF7F3]">
+                  <div className="flex items-center gap-3 p-4 bg-rose-pale">
                     <div className="w-5 h-5 rounded-full border-2 border-clay flex items-center justify-center">
                       <div className="w-2.5 h-2.5 bg-clay rounded-full" />
                     </div>
                     <span className="font-bold text-[0.9rem] text-ink flex-1">Cash on Delivery (COD)</span>
                     <span className="text-[1.2rem]">💵</span>
                   </div>
-                  <div className="px-12 py-3 bg-[#FDF7F3] text-[0.8rem] text-text-mid font-medium border-t border-border-soft">
+                  <div className="px-12 py-3 bg-rose-pale text-[0.8rem] text-text-mid font-medium border-t border-border-soft">
                     Pay when your order arrives. UPI &amp; Card payments coming soon.
                   </div>
                 </div>
@@ -477,7 +524,7 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   disabled={isProcessing || items.length === 0}
-                  className="w-full flex items-center justify-center p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all hover:bg-clay hover:scale-[1.02] shadow-[0_8px_24px_rgba(157,62,36,0.25)] disabled:opacity-70 disabled:hover:scale-100 disabled:hover:bg-clay-deep"
+                  className="w-full flex items-center justify-center p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all hover:bg-clay hover:scale-[1.02] shadow-[0_8px_24px_rgba(62,15,47,0.25)] disabled:opacity-70 disabled:hover:scale-100 disabled:hover:bg-clay-deep"
                 >
                   {isProcessing ? 'Placing Order...' : `Place Order — ₹${total.toLocaleString('en-IN')}`}
                 </button>
@@ -606,7 +653,7 @@ export default function CheckoutPage() {
                 type="submit"
                 form="checkout-form"
                 disabled={isProcessing || items.length === 0}
-                className="hidden lg:flex w-full items-center justify-center p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all hover:bg-clay hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(157,62,36,0.25)] group disabled:opacity-70 disabled:hover:scale-100 disabled:hover:bg-clay-deep"
+                className="hidden lg:flex w-full items-center justify-center p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all hover:bg-clay hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(62,15,47,0.25)] group disabled:opacity-70 disabled:hover:scale-100 disabled:hover:bg-clay-deep"
               >
                 {isProcessing ? 'Placing Order...' : 'Place Order'}
                 {!isProcessing && <ArrowRight size={20} className="ml-2 transition-transform group-hover:translate-x-1" />}

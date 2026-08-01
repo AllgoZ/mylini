@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { X, LogOut } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { Logo } from './Logo';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ export function MobileDrawer({ isOpen, onClose, isAuthenticated }: MobileDrawerP
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-border-soft shrink-0">
-              <span className="font-head text-xl font-bold text-clay-deep tracking-tight">Mylini</span>
+              <Logo variant="dark" size="sm" />
               <button
                 onClick={onClose}
                 className="w-11 h-11 rounded-full bg-surface-2 flex items-center justify-center text-text-mid hover:bg-border transition-colors"

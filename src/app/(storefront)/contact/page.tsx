@@ -174,7 +174,7 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="e.g. Priyadharshini"
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -187,7 +187,7 @@ export default function ContactPage() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="e.g. priya@example.com"
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   />
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function ContactPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="e.g. +91 98765 43210"
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -213,7 +213,7 @@ export default function ContactPage() {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   >
                     <option value="">Select a subject...</option>
                     <option value="Sizing Advice">Sizing & Fit Advice</option>
@@ -235,7 +235,7 @@ export default function ContactPage() {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="How can we help make your child's special occasion memorable?"
-                  className="p-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)] resize-none"
+                  className="p-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)] resize-none"
                 />
               </div>
 

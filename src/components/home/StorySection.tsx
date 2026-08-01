@@ -10,8 +10,8 @@ export function StorySection() {
       <div className="w-full grid grid-cols-1 md:grid-cols-2 min-h-[480px]">
         
         {/* Visual Half */}
-        <div className="bg-gradient-to-br from-[#4A1C08] via-[#8B3D1A] to-[#C4654A] flex items-center justify-center relative overflow-hidden min-h-[260px]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(201,169,110,0.15),transparent_60%)]" />
+        <div className="bg-gradient-to-br from-[#2F0B23] via-[#3E0F2F] to-[#77440F] flex items-center justify-center relative overflow-hidden min-h-[260px]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_70%,rgba(212,169,100,0.18),transparent_60%)]" />
           
           <div className="absolute -bottom-2 left-5 font-head text-[clamp(5rem,10vw,9rem)] font-bold text-white/[0.06] leading-none select-none">
             8
@@ -74,7 +74,7 @@ export function StorySection() {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-9">
             <div className="flex gap-2.5 items-start">
-              <div className="w-8 h-8 rounded-sm bg-[rgba(196,101,74,0.2)] flex items-center justify-center shrink-0 text-clay-soft">
+              <div className="w-8 h-8 rounded-sm bg-[rgba(138,90,110,0.3)] flex items-center justify-center shrink-0 text-clay-soft">
                 <Paintbrush size={16} />
               </div>
               <div className="text-[0.82rem] text-white/65 leading-[1.5]">
@@ -84,7 +84,7 @@ export function StorySection() {
             </div>
             
             <div className="flex gap-2.5 items-start">
-              <div className="w-8 h-8 rounded-sm bg-[rgba(196,101,74,0.2)] flex items-center justify-center shrink-0 text-clay-soft">
+              <div className="w-8 h-8 rounded-sm bg-[rgba(138,90,110,0.3)] flex items-center justify-center shrink-0 text-clay-soft">
                 <Scissors size={16} />
               </div>
               <div className="text-[0.82rem] text-white/65 leading-[1.5]">
@@ -94,7 +94,7 @@ export function StorySection() {
             </div>
             
             <div className="flex gap-2.5 items-start">
-              <div className="w-8 h-8 rounded-sm bg-[rgba(196,101,74,0.2)] flex items-center justify-center shrink-0 text-clay-soft">
+              <div className="w-8 h-8 rounded-sm bg-[rgba(138,90,110,0.3)] flex items-center justify-center shrink-0 text-clay-soft">
                 <Leaf size={16} />
               </div>
               <div className="text-[0.82rem] text-white/65 leading-[1.5]">
@@ -104,7 +104,7 @@ export function StorySection() {
             </div>
             
             <div className="flex gap-2.5 items-start">
-              <div className="w-8 h-8 rounded-sm bg-[rgba(196,101,74,0.2)] flex items-center justify-center shrink-0 text-clay-soft">
+              <div className="w-8 h-8 rounded-sm bg-[rgba(138,90,110,0.3)] flex items-center justify-center shrink-0 text-clay-soft">
                 <Sparkles size={16} />
               </div>
               <div className="text-[0.82rem] text-white/65 leading-[1.5]">

@@ -473,7 +473,7 @@ export function ProductDetailClient({ product }: Props) {
               disabled={!inStock || adding || !selectedVariant}
               className={`flex items-center justify-center gap-2 p-4 text-[0.95rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] ${
                 inStock
-                  ? 'bg-clay-deep text-white hover:bg-clay hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(157,62,36,0.3)] disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed'
+                  ? 'bg-clay-deep text-white hover:bg-clay hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(62,15,47,0.3)] disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed'
                   : 'bg-surface-2 text-text-light cursor-not-allowed'
               }`}
             >

@@ -229,7 +229,7 @@ export default function CartPage() {
 
                 <Link
                   href="/checkout"
-                  className="w-full flex items-center justify-between p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(157,62,36,0.25)] group"
+                  className="w-full flex items-center justify-between p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(62,15,47,0.25)] group"
                 >
                   Proceed to Checkout
                   <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />

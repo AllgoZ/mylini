@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -16,6 +16,15 @@ const inter = Inter({
   display: "swap",
 });
 
+// Wordmark-only serif — used exclusively by <Logo />, kept separate from the
+// body/heading sans fonts so the brand wordmark reads distinctly premium.
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "Mylini | Premium Indian Children's Ethnic Wear",
   description: "Crafting timeless ethnic luxury for little ones. Specializing in Pattupavadai, silk dresses, and traditional outfits.",
@@ -29,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${inter.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${inter.variable} ${cormorant.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

@@ -6,6 +6,7 @@ import { Search, Heart, ShoppingBag, User, Menu, Package } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { MobileDrawer } from './MobileDrawer';
+import { Logo } from './Logo';
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
@@ -40,16 +41,16 @@ export function Navbar() {
         )}
       >
         <div className="w-full px-4 md:px-7 h-[62px] flex items-center gap-8">
-          <Link href="/" className="font-head text-2xl font-bold text-clay-deep tracking-[-0.02em] shrink-0">
-            My<span className="text-clay">lini</span>
+          <Link href="/" aria-label="Mylini home">
+            <Logo variant="dark" size="md" showIcon={false} />
           </Link>
 
           {/* Search Pill */}
-          <div className="hidden md:flex flex-1 max-w-[460px] items-center gap-2.5 bg-surface-2 border-[1.5px] border-border-soft rounded-full px-[18px] h-10 transition-all duration-[0.22s] focus-within:border-clay-soft focus-within:shadow-[0_0_0_3px_rgba(196,101,74,0.1)] focus-within:bg-canvas">
+          <div className="hidden md:flex flex-1 max-w-[460px] items-center gap-2.5 bg-surface-2 border-[1.5px] border-border-soft rounded-full px-[18px] h-10 transition-all duration-[0.22s] focus-within:border-clay-soft focus-within:shadow-[0_0_0_3px_rgba(62,15,47,0.1)] focus-within:bg-canvas">
             <Search size={16} className="text-text-light shrink-0" strokeWidth={2} />
             <input
               type="text"
-              placeholder="Search sarees, pattupavadai, frocks..."
+              placeholder="Search Pattupavadai, Ethnic Sets, Frocks..."
               className="flex-1 border-none bg-transparent outline-none font-body text-sm text-text placeholder:text-text-light"
             />
           </div>
