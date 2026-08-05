@@ -1,12 +1,13 @@
 export const revalidate = 60;
 
 import { HeroBanner } from '@/components/home/HeroBanner';
+import { SearchBar } from '@/components/home/SearchBar';
 import { FadeImage } from '@/components/ui/FadeImage';
-import { OfferStrip } from '@/components/home/OfferStrip';
 import { CategoryCircles } from '@/components/home/CategoryCircles';
 import { ProductCard } from '@/components/shop/ProductCard';
 import { StorySection } from '@/components/home/StorySection';
 import { Testimonials } from '@/components/home/Testimonials';
+import { WhatsAppSubscribe } from '@/components/home/WhatsAppSubscribe';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { ProductService } from '@/lib/services/productService';
@@ -43,12 +44,11 @@ export default async function Home() {
   const featured = (featuredData?.items ?? []).map(adaptProductListItem);
   const bannerSections = homeSections.filter((s) => s.section_type === 'banner');
   const promoBlocks = homeSections.filter((s) => s.section_type === 'promo_block');
-  const bannerSection = bannerSections[0] ?? null;
 
   return (
     <div className="flex flex-col min-h-screen">
-      <HeroBanner section={bannerSection} />
-      <OfferStrip />
+      <SearchBar />
+      <HeroBanner sections={bannerSections} />
       <CategoryCircles />
 
       {/* Best Sellers */}
@@ -151,7 +151,7 @@ export default async function Home() {
         <section className="w-full mt-14">
           <div className="flex items-baseline justify-between mb-5 px-4 md:px-7">
             <h2 className="font-head text-[1.5rem] font-bold text-ink tracking-[-0.02em]">Featured Collection</h2>
-            <Link href="/shop/girls-traditional" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
+            <Link href="/collections" className="group flex items-center gap-1 text-[0.82rem] font-bold text-clay transition-all hover:gap-2">
               Explore all <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
@@ -175,26 +175,7 @@ export default async function Home() {
 
       <Testimonials />
 
-      {/* Newsletter */}
-      <section className="bg-gradient-to-br from-rose-blush to-gold-pale py-[72px] px-7 text-center mt-16">
-        <div className="max-w-[520px] mx-auto">
-          <div className="text-[2.2rem] mb-4">✉️</div>
-          <h2 className="font-head text-[2rem] font-bold text-clay-deep mb-2.5">Get 10% Off Your First Order</h2>
-          <p className="text-[0.95rem] text-text-mid leading-[1.6] mb-7">
-            Subscribe for new collection drops, exclusive offers, and styling inspiration for your little ones.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2.5 max-w-[440px] mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email..."
-              className="flex-1 h-12 px-5 border-[1.5px] border-border rounded-full font-body text-[0.9rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.12)] placeholder:text-text-light"
-            />
-            <button className="h-12 px-6.5 bg-clay-deep text-white text-[0.88rem] font-bold rounded-full whitespace-nowrap transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:-translate-y-0.5">
-              Subscribe
-            </button>
-          </div>
-        </div>
-      </section>
+      <WhatsAppSubscribe variant="hero" />
     </div>
   );
 }

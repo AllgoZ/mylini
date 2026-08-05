@@ -1,5 +1,5 @@
 import { apiFetch } from './index'
-import type { PaginatedProducts, ProductWithVariants } from '@/types/product'
+import type { PaginatedProducts, ProductWithVariants, ProductImage } from '@/types/product'
 import type { CreateProductInput, UpdateProductInput, CreateVariantInput, UpdateVariantInput, AddImageInput } from '@/lib/validations/adminProductSchema'
 import type { UploadResult } from '@/lib/storage/types'
 
@@ -37,8 +37,8 @@ export async function adminDeleteVariant(productId: string, variantId: string): 
   await apiFetch(`/api/admin/products/${productId}/variants/${variantId}`, { method: 'DELETE' })
 }
 
-export async function adminAddImage(productId: string, data: AddImageInput): Promise<void> {
-  await apiFetch(`/api/admin/products/${productId}/images`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+export async function adminAddImage(productId: string, data: AddImageInput): Promise<ProductImage> {
+  return apiFetch(`/api/admin/products/${productId}/images`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
 }
 
 export async function adminUpdateImage(productId: string, imageId: string, data: { sort_order?: number; is_primary?: boolean; alt_text?: string }): Promise<void> {

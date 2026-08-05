@@ -9,6 +9,15 @@ const createCategorySchema = z.object({
   parent_id: z.string().uuid().optional(),
 })
 
+export const GET = requireAdmin(async () => {
+  try {
+    const categories = await CategoryService.getAllForAdmin()
+    return successResponse(categories)
+  } catch (error) {
+    return errorResponse(error)
+  }
+})
+
 export const POST = requireAdmin(async (request, ctx) => {
   try {
     const body = await request.json()

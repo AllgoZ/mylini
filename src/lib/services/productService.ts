@@ -2,7 +2,7 @@ import { ProductRepository } from '@/lib/repositories/productRepository'
 import { storageProvider } from '@/lib/storage'
 import { AppError } from '@/lib/utils/errors'
 import { sanitizeProductDescription } from '@/lib/utils/sanitizeHtml'
-import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants } from '@/types/product'
+import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, ProductImage } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
 
 type ProductInsert = Database['public']['Tables']['products']['Insert']
@@ -81,7 +81,7 @@ export const ProductService = {
     return ProductRepository.softDeleteVariant(variantId)
   },
 
-  async addImage(productId: string, data: { public_url: string; alt_text?: string; sort_order?: number; is_primary?: boolean; storage_key?: string; storage_provider?: string; width?: number; height?: number }): Promise<void> {
+  async addImage(productId: string, data: { public_url: string; alt_text?: string; sort_order?: number; is_primary?: boolean; storage_key?: string; storage_provider?: string; width?: number; height?: number }): Promise<ProductImage> {
     return ProductRepository.addImage({
       product_id: productId,
       public_url: data.public_url,

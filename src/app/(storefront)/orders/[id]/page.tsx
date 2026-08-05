@@ -114,7 +114,7 @@ export default function OrderDetailPage() {
                   <div key={step.label} className="flex flex-col items-center gap-2 z-10 flex-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${
                       done ? 'bg-clay border-clay text-white'
-                        : active ? 'bg-white border-clay text-clay shadow-[0_0_0_3px_rgba(196,101,74,0.15)]'
+                        : active ? 'bg-white border-clay text-clay shadow-[0_0_0_3px_rgba(62,15,47,0.15)]'
                           : 'bg-white border-border-soft text-text-light'
                     }`}>
                       <Icon size={14} />
@@ -166,11 +166,15 @@ export default function OrderDetailPage() {
         <div className="bg-white rounded-2xl border border-border-soft shadow-s1 p-5 mb-4">
           <h2 className="text-[0.78rem] font-bold text-text-mid uppercase tracking-widest mb-4">Items Ordered</h2>
           <div className="flex flex-col gap-3">
-            {order.items.map(item => (
+            {order.items.map(item => {
+              const images = item.variant?.product?.images ?? []
+              const fallbackImage = images.find(i => i.is_primary)?.public_url ?? images[0]?.public_url ?? null
+              const image = item.image_snapshot ?? fallbackImage
+              return (
               <div key={item.id} className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border-soft">
                 <div className="w-12 h-12 rounded-lg bg-surface-2 border border-border-soft overflow-hidden shrink-0">
-                  {item.image_snapshot ? (
-                    <img src={item.image_snapshot} alt="" className="w-full h-full object-cover" />
+                  {image ? (
+                    <img src={image} alt="" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xl">👗</div>
                   )}
@@ -186,7 +190,8 @@ export default function OrderDetailPage() {
                   <p className="text-[0.7rem] text-text-light">@ ₹{item.unit_price.toLocaleString('en-IN')}</p>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -222,8 +227,20 @@ export default function OrderDetailPage() {
             )}
             <div className="flex justify-between text-text-mid">
               <span>Shipping</span>
-              <span className="font-semibold text-sage">Free</span>
+              {/* `?? 0` — orders placed before migration 040 has no shipping_charge column
+                  yet; degrades to the old "Free" display instead of crashing on undefined. */}
+              {(order.shipping_charge ?? 0) === 0 ? (
+                <span className="font-semibold text-sage">Free</span>
+              ) : (
+                <span className="font-semibold text-ink">₹{order.shipping_charge.toLocaleString('en-IN')}</span>
+              )}
             </div>
+            {(order.tax_amount ?? 0) > 0 && (
+              <div className="flex justify-between text-text-mid">
+                <span>Tax</span>
+                <span className="font-semibold text-ink">₹{order.tax_amount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
             <div className="flex justify-between font-bold text-[1rem] text-ink border-t border-border-soft pt-3">
               <span>Total</span>
               <span className="text-clay-deep">₹{order.total.toLocaleString('en-IN')}</span>

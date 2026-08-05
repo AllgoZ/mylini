@@ -4,6 +4,28 @@ Running log of significant production/live-DB bugs and their fixes, newest first
 
 ---
 
+## 2026-07-17 (later same day) — Order detail page: "Order 'xxx' not found" for every order (coupons grant gap)
+
+**Issue:** User reported that clicking into any order from `/orders` (My Orders) fails with `Order '<uuid>' not found` on `/orders/[id]`, even though the order genuinely exists and belongs to the logged-in user. The order **list** page worked fine — only the detail page failed.
+
+**Root Cause:** Third occurrence of the same class of bug as migrations 034/035. Migration `031_rls_and_permissions.sql` section 2 granted `coupons` `SELECT` only to `anon` (so guests can validate a coupon code at checkout) but never granted it to `authenticated`. `OrderRepository.findByIdForUser` (and the admin equivalent `findById`) embeds `coupon:coupons(id, code, type, value)` in its select — PostgREST needs `SELECT` on `coupons` to plan that embed even when `coupon_id` is `NULL` (the embed is still part of the query shape), so the entire query fails outright with `permission denied for table coupons` and the repository's generic `error || !data → NotFoundError` fallback surfaces it to the user as "not found". `findByUserId` (the list) never joins `coupons`, so it was unaffected — which is why the list worked but every single order's detail view didn't.
+
+**Diagnosis:** Reproduced directly (not guessed) by signing a real user JWT with the app's own `authenticatedClient.ts` code path and running the exact `findByIdForUser` query outside the app:
+```
+code: 42501
+message: "permission denied for table coupons"
+hint: "Grant the required privileges to the current role with: GRANT SELECT ON public.coupons TO authenticated;"
+```
+Confirmed the specific order and its address both existed and belonged to the same user (ruling out a data-integrity or ownership bug) before landing on the grant gap.
+
+**Fix:** `036_grant_authenticated_coupons_read.sql` — `GRANT SELECT ON coupons TO authenticated;`. **Not yet deployed** — per this project's standing rule (no automatic migration runner), this needs to be run by the user via the Supabase SQL Editor.
+
+**Files:**
+- `src/lib/db/migrations/036_grant_authenticated_coupons_read.sql` + `supabase/migrations/20240101000036_grant_authenticated_coupons_read.sql` — the fix (awaiting manual deployment)
+- No application code changed — the query itself was always correct; this was purely a missing DB grant.
+
+---
+
 ## 2026-07-17 (later same day) — Vercel: every storefront route crashed with 500 (jsdom bundling)
 
 **Issue:** After connecting the repo to Vercel (in addition to the existing Netlify deployment), every single page returned `500 FUNCTION_INVOCATION_FAILED`, both in the browser and in Vercel's own deployment preview pane. `npx tsc --noEmit` and `npm run build` passed cleanly, both locally and as part of Vercel's own build step — the Build Log showed a fully healthy build with no errors.

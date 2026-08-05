@@ -1,23 +1,15 @@
 import { successResponse, errorResponse } from '@/lib/utils/apiResponse'
 import { AppError } from '@/lib/utils/errors'
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHmac } from 'node:crypto'
 import { z } from 'zod'
 import { captureMessage } from '@/lib/utils/sentry'
 import { checkRateLimit } from '@/lib/utils/rateLimit'
+import { SettingsService } from '@/lib/services/settingsService'
 
 const schema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
-
-// Constant-time comparison — a plain `===` short-circuits on the first differing byte,
-// which leaks (via response timing) how many leading characters of a guess were correct.
-function timingSafeStringEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a, 'utf8')
-  const bufB = Buffer.from(b, 'utf8')
-  if (bufA.length !== bufB.length) return false
-  return timingSafeEqual(bufA, bufB)
-}
 
 export function signAdminToken(email: string, secret: string): string {
   const payload = Buffer.from(
@@ -38,17 +30,16 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { email, password } = schema.parse(body)
 
-    const adminEmail = process.env.ADMIN_EMAIL
+    // Signing secret stays the env var regardless of a settings-panel credential
+    // override (see SettingsService) — only the login check itself considers the
+    // override, so changing your password never invalidates other admin sessions.
     const adminPassword = process.env.ADMIN_PASSWORD
-
-    if (!adminEmail || !adminPassword) {
+    if (!adminPassword) {
       throw new AppError('Admin credentials not configured on server', 500)
     }
 
-    const emailOk = timingSafeStringEqual(email.toLowerCase(), adminEmail.toLowerCase())
-    const passwordOk = timingSafeStringEqual(password, adminPassword)
-
-    if (!emailOk || !passwordOk) {
+    const credentialsOk = await SettingsService.verifyAdminLogin(email, password)
+    if (!credentialsOk) {
       captureMessage(`Failed admin login attempt for ${email}`, 'warning')
       throw new AppError('Invalid email or password', 401, 'INVALID_CREDENTIALS')
     }

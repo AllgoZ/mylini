@@ -41,6 +41,7 @@ MYLINI v2 is a premium Indian children's ethnic wear e-commerce platform.
 | Opti Phase 3 — Security & Reliability (RLS, JWT auth, rate limiting, CSP, XSS sanitization, `proxy.ts`) | ✅ Done |
 | Phase 3B — Wishlist Enhancements | ✅ Done — superseded by Opti Phase 3's real per-user RLS |
 | Email — Resend order-placed notification | ✅ Done — store-owner notification only, sandbox sender |
+| UI Polish — Storefront & Mobile | ✅ Done — login-before-purchase gating, stock/quantity UX, address book at checkout, nav quick-links, mobile touch targets, ISR fix for `/`, `/product/[slug]`, `/shop/[category]` — see `prompts/Plans/mylini_v2_uipolish_implementation.md` |
 | Phase 3.1 — OTP Verification | 🟡 Built, not wired — infra complete (migrations 032/033), login UI is still phone-only by explicit choice |
 | Phase 6 — Payments (Razorpay) | 🔲 Planned — checkout UI already says "COD only, UPI/Card coming soon" |
 | Phase 7 — Sanity CMS | 🔲 Planned — homepage CMS already works via DB-backed `homepage_sections` |

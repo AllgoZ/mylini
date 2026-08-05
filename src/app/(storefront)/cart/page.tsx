@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Minus, Plus, ArrowRight, ShieldCheck, Truck, ArrowLeft } from 'lucide-react';
@@ -8,21 +8,47 @@ import { useCartStore } from '@/store/useCartStore';
 import { FadeImage } from '@/components/ui/FadeImage';
 import { cartItemPrice } from '@/types/cart';
 import { toast } from 'sonner';
+import { getPublicSettings } from '@/lib/api/settings';
+
+// Same defaults as before settings existed — used until the fetch below resolves, and
+// kept as the fallback if it fails, so a settings-API hiccup never breaks the cart page.
+const DEFAULT_SHIPPING_CHARGE = 150;
+const DEFAULT_FREE_SHIPPING_THRESHOLD = 4000;
 
 export default function CartPage() {
   const { cart, loading, fetchCart, updateItem, removeItem, getSubtotal } = useCartStore();
+  const [shippingCharge, setShippingCharge] = useState(DEFAULT_SHIPPING_CHARGE);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(DEFAULT_FREE_SHIPPING_THRESHOLD);
 
   useEffect(() => { fetchCart(); }, [fetchCart]);
+  useEffect(() => {
+    getPublicSettings()
+      .then((s) => {
+        setShippingCharge(s.shipping_charge);
+        setFreeShippingThreshold(s.free_shipping_threshold);
+      })
+      .catch(() => {});
+  }, []);
 
   const subtotal = getSubtotal();
-  const shipping = subtotal > 4000 ? 0 : 150;
+  const shipping = subtotal > freeShippingThreshold ? 0 : shippingCharge;
   const total = subtotal + shipping;
   const items = cart?.items ?? [];
 
-  const handleUpdateQty = async (variantId: string, qty: number) => {
+  const handleUpdateQty = async (variantId: string, qty: number, stockAvailable: number | null) => {
     if (qty < 1) return;
+    if (stockAvailable != null && qty > stockAvailable) {
+      toast.error(
+        stockAvailable > 0
+          ? `Only ${stockAvailable} piece${stockAvailable === 1 ? '' : 's'} available.`
+          : 'This item is out of stock.'
+      );
+      return;
+    }
     try { await updateItem(variantId, qty); }
-    catch (e: any) { toast.error(e?.message ?? 'Failed to update'); }
+    catch (e: any) {
+      toast.error(e?.message?.includes('Insufficient stock') ? 'Not enough stock for that quantity.' : (e?.message ?? 'Failed to update'));
+    }
   };
 
   const handleRemove = async (variantId: string) => {
@@ -88,6 +114,10 @@ export default function CartPage() {
                   const variantId = item.variant_id;
                   const price = cartItemPrice(item);
                   const slug = item.variant?.product?.slug ?? '';
+                  const stock = item.variant?.inventory;
+                  const stockAvailable = stock ? stock.stock_available : null;
+                  const atStockCap = stockAvailable != null && item.quantity >= stockAvailable;
+                  const lowStock = stockAvailable != null && stockAvailable <= (stock?.low_stock_threshold ?? 5) && stockAvailable > 0;
 
                   return (
                     <motion.div
@@ -118,10 +148,14 @@ export default function CartPage() {
                                 Size: <span className="text-ink font-bold">{size}</span>
                               </p>
                             )}
+                            {lowStock && (
+                              <p className="text-[0.72rem] text-destructive font-bold mt-0.5">Only {stockAvailable} left</p>
+                            )}
                           </div>
                           <button
                             onClick={() => handleRemove(variantId)}
-                            className="text-text-light hover:text-destructive transition-all shrink-0 h-fit mt-0.5 active:scale-90"
+                            aria-label="Remove item"
+                            className="text-text-light hover:text-destructive transition-all shrink-0 active:scale-90 p-2.5 -m-2.5"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -129,11 +163,19 @@ export default function CartPage() {
 
                         <div className="flex items-center justify-between mt-3 gap-2">
                           <div className="flex items-center border-[1.5px] border-border rounded-lg overflow-hidden bg-surface">
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity - 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
+                            <button
+                              onClick={() => handleUpdateQty(variantId, item.quantity - 1, stockAvailable)}
+                              disabled={item.quantity <= 1}
+                              className="w-11 h-11 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
                               <Minus size={13} />
                             </button>
                             <div className="w-8 text-center font-bold text-[0.85rem] text-text select-none">{item.quantity}</div>
-                            <button onClick={() => handleUpdateQty(variantId, item.quantity + 1)} className="w-8 h-8 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
+                            <button
+                              onClick={() => handleUpdateQty(variantId, item.quantity + 1, stockAvailable)}
+                              disabled={atStockCap}
+                              className="w-11 h-11 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            >
                               <Plus size={13} />
                             </button>
                           </div>
@@ -187,7 +229,7 @@ export default function CartPage() {
 
                 <Link
                   href="/checkout"
-                  className="w-full flex items-center justify-between p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(157,62,36,0.25)] group"
+                  className="w-full flex items-center justify-between p-4 bg-clay-deep text-white text-[1rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:scale-[1.02] hover:shadow-[0_8px_24px_rgba(62,15,47,0.25)] group"
                 >
                   Proceed to Checkout
                   <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
@@ -201,7 +243,7 @@ export default function CartPage() {
                   {shipping > 0 && (
                     <div className="flex items-center gap-2.5 text-[0.8rem] font-semibold text-text-mid bg-surface p-3 rounded-xl border border-border-soft">
                       <Truck size={18} className="text-clay shrink-0" />
-                      <span>Add ₹{(4000 - subtotal).toLocaleString('en-IN')} more to unlock Free Shipping</span>
+                      <span>Add ₹{(freeShippingThreshold - subtotal).toLocaleString('en-IN')} more to unlock Free Shipping</span>
                     </div>
                   )}
                 </div>

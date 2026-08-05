@@ -1,10 +1,12 @@
-import { createClient } from '@/lib/db/server'
 import { createAdminClient } from '@/lib/db/admin'
+import { createPublicClient } from '@/lib/db/publicClient'
 import type { HomepageSection, CreateHomepageSectionInput, UpdateHomepageSectionInput, HomepageSectionType } from '@/types/homepage'
 
-// homepage_sections is defined in migration 029 — cast required until types are regenerated
-async function db() {
-  return (await createClient()) as any
+// homepage_sections is defined in migration 029 — cast required until types are regenerated.
+// Public reads use the cookie-free client — server.ts's createClient() calls cookies(),
+// which forces the homepage route fully dynamic and defeats `export const revalidate`.
+function db() {
+  return createPublicClient() as any
 }
 
 // Admin content-management methods (create/update/remove/reorder/findAll) use the
@@ -21,6 +23,37 @@ export const HomepageRepository = {
       .select('*')
       .eq('section_type', type)
       .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+
+    if (error) throw new Error(error.message)
+    return (data ?? []) as HomepageSection[]
+  },
+
+  // "Shop By Category" should only show a Featured Category tile that at least one
+  // active product actually carries — two small queries (distinct in-use ids, then the
+  // matching rows) rather than a single complex join; both tables are small so this
+  // stays fast either way.
+  async findFeaturedCategoriesInUse(): Promise<HomepageSection[]> {
+    const supabase = await db()
+
+    const { data: productRows, error: productErr } = await supabase
+      .from('products')
+      .select('featured_category_id')
+      .eq('status', 'active')
+      .is('deleted_at', null)
+      .not('featured_category_id', 'is', null)
+
+    if (productErr) throw new Error(productErr.message)
+
+    const idsInUse = [...new Set((productRows ?? []).map((p: any) => p.featured_category_id))]
+    if (idsInUse.length === 0) return []
+
+    const { data, error } = await supabase
+      .from('homepage_sections')
+      .select('*')
+      .eq('section_type', 'featured_category')
+      .eq('is_active', true)
+      .in('id', idsInUse)
       .order('sort_order', { ascending: true })
 
     if (error) throw new Error(error.message)

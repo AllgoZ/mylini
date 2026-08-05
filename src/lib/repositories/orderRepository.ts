@@ -19,6 +19,8 @@ export type CreateOrderTransactionalInput = {
   coupon_id: string | null
   subtotal: number
   discount: number
+  shipping: number
+  tax: number
   total: number
   notes: string | null
   items: {
@@ -44,7 +46,7 @@ export const OrderRepository = {
       .single()
 
     if (error) throw new Error(error.message)
-    return order
+    return order as unknown as Order
   },
 
   async addItems(items: OrderItemInsert[]): Promise<void> {
@@ -66,6 +68,8 @@ export const OrderRepository = {
       p_coupon_id: input.coupon_id,
       p_subtotal: input.subtotal,
       p_discount: input.discount,
+      p_shipping: input.shipping,
+      p_tax: input.tax,
       p_total: input.total,
       p_notes: input.notes,
       p_items: input.items,
@@ -117,7 +121,7 @@ export const OrderRepository = {
       .from('orders')
       .select(`
         *,
-        items:order_items(*),
+        items:order_items(*, variant:product_variants(product:products(images:product_images(public_url, is_primary)))),
         address:addresses!inner(*),
         coupon:coupons(id, code, type, value)
       `)
@@ -132,7 +136,7 @@ export const OrderRepository = {
     const supabase = await createAuthenticatedClient(userId)
     const { data, error } = await supabase
       .from('orders')
-      .select('id, status, subtotal, discount, total, created_at, tracking_number, tracking_url, items:order_items(quantity, product_name_snapshot, image_snapshot)')
+      .select('id, status, subtotal, discount, total, created_at, tracking_number, tracking_url, items:order_items(quantity, product_name_snapshot, image_snapshot, variant:product_variants(product:products(images:product_images(public_url, is_primary))))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -146,10 +150,17 @@ export const OrderRepository = {
       total: o.total,
       created_at: o.created_at,
       item_count: (o.items ?? []).reduce((n: number, i: any) => n + i.quantity, 0),
-      items_preview: (o.items ?? []).slice(0, 3).map((i: any) => ({
-        product_name_snapshot: i.product_name_snapshot ?? '',
-        image_snapshot: i.image_snapshot ?? null,
-      })),
+      items_preview: (o.items ?? []).slice(0, 3).map((i: any) => {
+        // Older orders (placed before image_snapshot started saving correctly) have
+        // image_snapshot: null permanently — fall back to the variant's current
+        // product image via the same join used by findByIdForUser.
+        const images = i.variant?.product?.images ?? []
+        const fallbackImage = images.find((img: any) => img.is_primary)?.public_url ?? images[0]?.public_url ?? null
+        return {
+          product_name_snapshot: i.product_name_snapshot ?? '',
+          image_snapshot: i.image_snapshot ?? fallbackImage,
+        }
+      }),
     }))
   },
 

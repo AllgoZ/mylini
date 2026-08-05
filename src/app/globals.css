@@ -5,38 +5,38 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Brand Core Colors (From Reference Image) */
-  --color-clay: #2B170B;       /* --dark-coffee-2 (Accents / Headings) */
-  --color-clay-deep: #35200F;  /* --dark-coffee-3 (Buttons / Active elements) */
-  --color-clay-soft: #392819;  /* --dark-coffee */
-  --color-rose: #392819;       /* Secondary coffee brown */
-  --color-rose-pale: #EEDBCD;  /* --powder-petal */
-  --color-rose-blush: #FAF5F2; /* Parchment Warm Cards */
-  
+  /* Brand Core Colors — MYLINI official palette: Barossa (deep wine/plum) + Milk (antique gold) */
+  --color-clay: #2F0B23;       /* Darker Barossa — hover/active shade */
+  --color-clay-deep: #3E0F2F;  /* Barossa (Buttons / Active elements / Headings) */
+  --color-clay-soft: #8A5A6E;  /* Mid plum — focus rings / soft borders */
+  --color-rose: #8A5A6E;       /* Secondary plum */
+  --color-rose-pale: #F3E4D6;  /* Pale Milk-gold tint — icon circle backgrounds */
+  --color-rose-blush: #FBF1E6; /* Warm cream cards */
+
   /* Accent Colors */
-  --color-sage: #5A6D5D;       /* Soothing muted green */
+  --color-sage: #5A6D5D;       /* Soothing muted green (semantic success — unchanged) */
   --color-sage-light: #C4D0C6;
-  --color-gold: #B89355;       /* Soothing antique gold */
-  --color-gold-pale: #EEDBCD;  /* --powder-petal */
+  --color-gold: #D4A964;       /* Milk — official brand gold */
+  --color-gold-pale: #D4A964;  /* Milk — official brand gold */
 
   /* Neutral Soothing Warm Palette */
-  --color-ink: #2B170B;         /* --dark-coffee-2 (Highly visible title ink) */
-  --color-text: #35200F;        /* --dark-coffee-3 (Highly readable primary text) */
-  --color-text-mid: #392819;    /* --dark-coffee (Clear and sharp secondary text) */
-  --color-text-light: #605045;  /* Muted but high-contrast text for secondary elements */
-  --color-canvas: #F9F4F1;      /* --parchment (Extremely soothing background) */
+  --color-ink: #3E0F2F;         /* Barossa (Highly visible title ink) */
+  --color-text: #3E0F2F;        /* Barossa (Highly readable primary text) */
+  --color-text-mid: #6B4A5C;    /* Muted plum (Clear and sharp secondary text) */
+  --color-text-light: #8C7480;  /* Light muted plum for secondary elements */
+  --color-canvas: #fff3e6;      /* --parchment (Extremely soothing background) */
   --color-canvas-warm: #FAF5F2; /* Soothing warm parchment background */
   --color-surface: #FAF5F2;     /* Parchment cards */
   --color-surface-2: #EEDBCD;   /* --powder-petal */
-  --color-border-brand: #EEDBCD;/* --powder-petal */
-  --color-border-soft: #EADAD2; /* Visible soft border */
+  --color-border-brand: #E9D9DD;/* Pale pink-tan border */
+  --color-border-soft: #E9D9DD; /* Visible soft border */
 
-  /* iOS-Style Elevation */
-  --shadow-s1: 0 1px 3px rgba(43, 23, 11, 0.04);
-  --shadow-s2: 0 2px 8px rgba(43, 23, 11, 0.06);
-  --shadow-s3: 0 4px 20px rgba(43, 23, 11, 0.08);
-  --shadow-s4: 0 8px 32px rgba(43, 23, 11, 0.10);
-  --shadow-s5: 0 16px 48px rgba(43, 23, 11, 0.12);
+  /* iOS-Style Elevation — tinted with brand Barossa */
+  --shadow-s1: 0 1px 3px rgba(62, 15, 47, 0.04);
+  --shadow-s2: 0 2px 8px rgba(62, 15, 47, 0.06);
+  --shadow-s3: 0 4px 20px rgba(62, 15, 47, 0.08);
+  --shadow-s4: 0 8px 32px rgba(62, 15, 47, 0.10);
+  --shadow-s5: 0 16px 48px rgba(62, 15, 47, 0.12);
 
   /* iOS Generous Radius Scale */
   --radius-xs: 8px;
@@ -49,6 +49,7 @@
   /* Editorial Fonts (Soothing & iOS Readable) */
   --font-head: var(--font-jakarta), system-ui, sans-serif;
   --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-logo: var(--font-montserrat), 'Helvetica Neue', Arial, sans-serif; /* Wordmark only — see <Logo /> */
 
   /* Animation Easing */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -92,25 +93,35 @@
   --color-card: var(--card);
 }
 
+/* Nearly every font-size and spacing value in this codebase is defined in `rem`
+   (600+ text-[Nrem] utilities, plus Tailwind's own spacing/radius scale, which is
+   rem-based by default) — so a single root scale proportionally shrinks text,
+   padding, gaps and radii sitewide, keeping every existing ratio/hierarchy intact
+   instead of a page-by-page rewrite. 15px (93.75%) is a moderate, one-step-down
+   reduction; the smallest existing labels (~0.6rem) stay comfortably above 8px. */
+html {
+  font-size: 93.75%;
+}
+
 :root {
-  --background: #F9F4F1;        /* --parchment */
-  --foreground: #2B170B;        /* --dark-coffee-2 */
+  --background: #fff3e6;        /* --parchment */
+  --foreground: #3E0F2F;        /* Barossa */
   --card: #FAF5F2;
-  --card-foreground: #2B170B;
+  --card-foreground: #3E0F2F;
   --popover: #F9F4F1;
-  --popover-foreground: #2B170B;
-  --primary: #35200F;           /* --dark-coffee-3 */
+  --popover-foreground: #3E0F2F;
+  --primary: #3E0F2F;           /* Barossa */
   --primary-foreground: #ffffff;
-  --secondary: #EEDBCD;         /* --powder-petal */
-  --secondary-foreground: #392819;
+  --secondary: #F3E4D6;         /* Pale Milk-gold tint */
+  --secondary-foreground: #6B4A5C;
   --muted: #FAF5F2;
-  --muted-foreground: #605045;  /* Higher contrast secondary */
-  --accent: #EEDBCD;
-  --accent-foreground: #2B170B;
+  --muted-foreground: #6B4A5C;  /* Muted plum secondary */
+  --accent: #F3E4D6;
+  --accent-foreground: #3E0F2F;
   --destructive: #d32f2f;
-  --border: #EEDBCD;
-  --input: #EADAD2;
-  --ring: #EEDBCD;
+  --border: #E9D9DD;
+  --input: #E9D9DD;
+  --ring: #E9D9DD;
   
   --radius: 0.625rem;
   

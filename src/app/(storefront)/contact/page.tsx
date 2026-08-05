@@ -104,7 +104,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Email Support</h3>
-                  <a href="mailto:love@mylini.com" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">love@mylini.com</a>
+                  <a href="mailto:team@mylini.com" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">team@mylini.com</a>
                   <p className="text-[0.78rem] text-text-light mt-0.5">We reply in 24 hours</p>
                 </div>
               </div>
@@ -115,8 +115,8 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Helpline Number</h3>
-                  <a href="tel:+919876543210" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">+91 98765 43210</a>
-                  <p className="text-[0.78rem] text-text-light mt-0.5">Mon–Sat, 10 AM to 6 PM IST</p>
+                  <a href="tel:+919500151606" className="text-[0.92rem] font-bold text-ink hover:text-clay transition-colors">+91 95001 51606</a>
+                  <p className="text-[0.78rem] text-text-light mt-0.5">Mon–Sat, 10 AM to 7 PM IST</p>
                 </div>
               </div>
 
@@ -125,10 +125,10 @@ export default function ContactPage() {
                   <MapPin className="text-clay w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Designer Studio</h3>
-                  <p className="text-[0.92rem] font-bold text-ink">Mylini Ethnic Wear Studio</p>
+                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Address</h3>
+                  <p className="text-[0.92rem] font-bold text-ink">Mylini Ventures</p>
                   <p className="text-[0.82rem] text-text-mid leading-relaxed">
-                    12, Khader Nawaz Khan Road, Nungambakkam,<br />Chennai, Tamil Nadu - 600006
+                    122, Annai Sathya Layout, Karunanidhi Nagar,<br />Ramanadhapuram, Coimbatore - 641045
                   </p>
                 </div>
               </div>
@@ -138,9 +138,9 @@ export default function ContactPage() {
                   <Clock className="text-clay w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">Customer Support Hours</h3>
-                  <p className="text-[0.92rem] font-semibold text-ink">10:00 AM – 06:00 PM (IST)</p>
-                  <p className="text-[0.78rem] text-text-light mt-0.5">Closed on Sundays & National Holidays</p>
+                  <h3 className="text-[0.72rem] font-bold text-text-light uppercase tracking-wider mb-1">We&apos;re Open</h3>
+                  <p className="text-[0.82rem] text-text-mid leading-relaxed">Our store has re-opened for shopping, exchanges</p>
+                  <p className="text-[0.92rem] font-semibold text-ink mt-1">Monday – Saturday, 10 AM to 7 PM</p>
                 </div>
               </div>
             </div>
@@ -174,7 +174,7 @@ export default function ContactPage() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="e.g. Priyadharshini"
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -187,7 +187,7 @@ export default function ContactPage() {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="e.g. priya@example.com"
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   />
                 </div>
               </div>
@@ -202,7 +202,7 @@ export default function ContactPage() {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="e.g. +91 98765 43210"
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
@@ -213,7 +213,7 @@ export default function ContactPage() {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)]"
+                    className="h-11 px-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)]"
                   >
                     <option value="">Select a subject...</option>
                     <option value="Sizing Advice">Sizing & Fit Advice</option>
@@ -235,7 +235,7 @@ export default function ContactPage() {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="How can we help make your child's special occasion memorable?"
-                  className="p-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(196,101,74,0.1)] resize-none"
+                  className="p-4 border-[1.5px] border-border rounded-xl font-body text-[0.85rem] bg-white text-text outline-none transition-all duration-[--t] focus:border-clay focus:shadow-[0_0_0_3px_rgba(62,15,47,0.1)] resize-none"
                 />
               </div>
 

@@ -2,22 +2,25 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star } from 'lucide-react'
+import { LayoutDashboard, Package, BarChart3, ShoppingBag, Tag, Users, X, Image as ImageIcon, LayoutTemplate, Star, Settings, FolderTree, Info } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
   { label: 'Products', href: '/admin/products', icon: Package },
+  { label: 'Categories', href: '/admin/categories', icon: FolderTree },
   { label: 'Inventory', href: '/admin/inventory', icon: BarChart3 },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Coupons', href: '/admin/coupons', icon: Tag },
   { label: 'Customers', href: '/admin/customers', icon: Users },
+  { label: 'Settings', href: '/admin/settings', icon: Settings },
 ]
 
 const CONTENT_NAV = [
   { label: 'Homepage Banner', href: '/admin/content/banner', icon: ImageIcon },
   { label: 'Promo Blocks', href: '/admin/content/promo-blocks', icon: LayoutTemplate },
   { label: 'Featured Categories', href: '/admin/content/featured-categories', icon: Star },
+  { label: 'About Us', href: '/admin/about', icon: Info },
 ]
 
 interface Props {

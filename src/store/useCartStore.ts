@@ -16,6 +16,7 @@ export interface OptimisticCartItemInput {
     color: string | null
     size: string | null
     price_override: number | null
+    inventory: { stock_available: number; low_stock_threshold: number } | null
   }
   product: {
     id: string
@@ -49,6 +50,7 @@ function buildOptimisticItem(variantId: string, quantity: number, input: Optimis
       color: input.variant.color,
       size: input.variant.size,
       price_override: input.variant.price_override,
+      inventory: input.variant.inventory,
       product: input.product,
       primary_image: input.primary_image,
     },

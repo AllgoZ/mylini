@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/db/server'
 import { createAdminClient } from '@/lib/db/admin'
+import { createPublicClient } from '@/lib/db/publicClient'
 import { NotFoundError } from '@/lib/utils/errors'
-import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, VariantSnapshot } from '@/types/product'
+import type { ProductFilters, ProductFilterMetadata, PaginatedProducts, ProductListItem, ProductWithVariants, VariantSnapshot, ProductImage } from '@/types/product'
 import type { Database } from '@/lib/db/generated/database.types'
 
 type ProductInsert = Database['public']['Tables']['products']['Insert']
@@ -58,7 +59,7 @@ const DETAIL_SELECT_LEFT = `
 
 export const ProductRepository = {
   async findAll(filters: ProductFilters): Promise<PaginatedProducts> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20
     const from = (page - 1) * limit
@@ -136,7 +137,7 @@ export const ProductRepository = {
   },
 
   async findBySlug(slug: string): Promise<ProductWithVariants> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data, error } = await supabase
       .from('products')
       .select(DETAIL_SELECT_INNER)
@@ -171,7 +172,7 @@ export const ProductRepository = {
   },
 
   async getFilterMetadata(category?: string): Promise<ProductFilterMetadata> {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
 
     // Products in this category (active, not deleted)
     let productIdQuery = supabase
@@ -395,10 +396,15 @@ export const ProductRepository = {
     if (error) throw new Error(error.message)
   },
 
-  async addImage(data: ImageInsert): Promise<void> {
+  async addImage(data: ImageInsert): Promise<ProductImage> {
     const supabase = createAdminClient()
-    const { error } = await supabase.from('product_images').insert(data as any)
+    const { data: created, error } = await supabase
+      .from('product_images')
+      .insert(data as any)
+      .select()
+      .single()
     if (error) throw new Error(error.message)
+    return created as unknown as ProductImage
   },
 
   async findImageById(imageId: string): Promise<{ storage_key: string; storage_provider: string } | null> {
@@ -450,12 +456,14 @@ export const ProductRepository = {
 
   async findVariantsByIds(variantIds: string[]): Promise<VariantSnapshot[]> {
     const supabase = await createClient()
+    // Images are attached to the product (product_images.product_id), not the variant —
+    // product_images.variant_id exists in the schema but is never populated by the admin
+    // panel. Same fix as cartRepository.ts's product join.
     const { data, error } = await supabase
       .from('product_variants')
       .select(`
         id, sku, color, size, price_override,
-        product:products!inner(name, base_price, sale_price),
-        images:product_images(public_url, is_primary)
+        product:products!inner(name, base_price, sale_price, images:product_images(public_url, is_primary))
       `)
       .in('id', variantIds)
 
@@ -468,7 +476,7 @@ export const ProductRepository = {
       size: v.size,
       price: v.price_override ?? v.product.sale_price ?? v.product.base_price,
       productName: v.product.name,
-      image: v.images?.find((i: any) => i.is_primary)?.public_url ?? v.images?.[0]?.public_url ?? null,
+      image: v.product.images?.find((i: any) => i.is_primary)?.public_url ?? v.product.images?.[0]?.public_url ?? null,
     }))
   },
 }

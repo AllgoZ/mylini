@@ -9,8 +9,8 @@ export const POST = requireAdmin(async (request, ctx) => {
     const id = parts[parts.indexOf('products') + 1]
     const body = await request.json()
     const data = addImageSchema.parse(body)
-    await ProductService.addImage(id, data)
-    return successResponse(null, 201)
+    const created = await ProductService.addImage(id, data)
+    return successResponse(created, 201)
   } catch (error) {
     return errorResponse(error)
   }

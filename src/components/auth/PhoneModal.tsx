@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Phone, X } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
+import { Logo } from '@/components/layout/Logo'
 
 export function PhoneModal() {
   const { loginModalOpen, closeLoginModal, login } = useAuthStore()
@@ -44,12 +45,14 @@ export function PhoneModal() {
       <div className="relative bg-white rounded-3xl shadow-[0_24px_80px_rgba(0,0,0,0.18)] p-8 w-full max-w-[380px] border border-border-soft">
         <button
           onClick={closeLoginModal}
-          className="absolute top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center text-text-light hover:bg-surface-2 hover:text-text transition-all"
+          aria-label="Close"
+          className="absolute top-3 right-3 w-11 h-11 rounded-full flex items-center justify-center text-text-light hover:bg-surface-2 hover:text-text transition-all"
         >
           <X size={18} />
         </button>
 
         <div className="flex flex-col items-center text-center mb-6">
+          <Logo variant="dark" size="sm" className="mb-4" />
           <div className="w-14 h-14 rounded-2xl bg-rose-pale flex items-center justify-center text-clay mb-4">
             <Phone size={24} strokeWidth={1.8} />
           </div>
@@ -62,7 +65,7 @@ export function PhoneModal() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <div className="flex items-center border-[1.5px] border-border-soft rounded-xl overflow-hidden focus-within:border-clay focus-within:shadow-[0_0_0_3px_rgba(196,101,74,0.12)] transition-all bg-surface">
+            <div className="flex items-center border-[1.5px] border-border-soft rounded-xl overflow-hidden focus-within:border-clay focus-within:shadow-[0_0_0_3px_rgba(62,15,47,0.12)] transition-all bg-surface">
               <div className="px-3.5 py-3 text-[0.9rem] font-semibold text-text-mid border-r border-border-soft bg-surface-2 select-none">
                 +91
               </div>
@@ -89,7 +92,7 @@ export function PhoneModal() {
           <button
             type="submit"
             disabled={loading || phone.length !== 10}
-            className="w-full py-3.5 bg-clay-deep text-white font-bold text-[0.95rem] rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(157,62,36,0.3)] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-clay-deep text-white font-bold text-[0.95rem] rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(62,15,47,0.3)] disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none disabled:cursor-not-allowed"
           >
             {loading ? 'Signing in...' : 'Continue'}
           </button>

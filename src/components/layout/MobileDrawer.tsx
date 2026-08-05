@@ -2,8 +2,11 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { X, LogOut } from 'lucide-react';
 import { useEffect } from 'react';
+import { useAuthStore } from '@/store/useAuthStore';
+import { Logo } from './Logo';
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -42,6 +45,15 @@ const backdropVariants = {
 };
 
 export function MobileDrawer({ isOpen, onClose, isAuthenticated }: MobileDrawerProps) {
+  const router = useRouter();
+  const logout = useAuthStore((s) => s.logout);
+
+  const handleLogout = async () => {
+    onClose();
+    await logout();
+    router.replace('/');
+  };
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -78,10 +90,10 @@ export function MobileDrawer({ isOpen, onClose, isAuthenticated }: MobileDrawerP
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-border-soft shrink-0">
-              <span className="font-head text-xl font-bold text-clay-deep tracking-tight">Mylini</span>
+              <Logo variant="dark" size="sm" />
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-surface-2 flex items-center justify-center text-text-mid hover:bg-border transition-colors"
+                className="w-11 h-11 rounded-full bg-surface-2 flex items-center justify-center text-text-mid hover:bg-border transition-colors"
                 aria-label="Close menu"
               >
                 <X size={17} />
@@ -116,10 +128,16 @@ export function MobileDrawer({ isOpen, onClose, isAuthenticated }: MobileDrawerP
                   <Link
                     href="/account"
                     onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-3.5 text-[0.95rem] font-semibold text-text rounded-xl transition-colors hover:bg-surface-2 hover:text-clay active:bg-surface-2"
+                    className="flex items-center gap-3 px-3 py-3.5 text-[0.95rem] font-semibold text-text rounded-xl border-b border-border-soft/60 transition-colors hover:bg-surface-2 hover:text-clay active:bg-surface-2"
                   >
                     👤 My Account
                   </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-3 py-3.5 text-[0.95rem] font-semibold text-destructive rounded-xl transition-colors hover:bg-red-50 active:bg-red-50"
+                  >
+                    <LogOut size={17} /> Log Out
+                  </button>
                 </div>
               )}
             </div>

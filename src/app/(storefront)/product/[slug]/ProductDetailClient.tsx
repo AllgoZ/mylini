@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { ProductWithVariants, ProductSummary } from '@/types/product';
 import { useCartStore } from '@/store/useCartStore';
 import { useWishStore } from '@/store/useWishStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { adaptProductListItem } from '@/lib/utils/adapters';
 import { getDetailImageUrl, getThumbImageUrl } from '@/lib/utils/imageUrl';
 import { ProductCard } from '@/components/shop/ProductCard';
@@ -35,6 +36,7 @@ export function ProductDetailClient({ product }: Props) {
   const [isZoomed, setIsZoomed] = useState(false);
   const [adding, setAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [stockError, setStockError] = useState<string | null>(null);
   const [sizeChartOpen, setSizeChartOpen] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<ProductSummary[]>([]);
 
@@ -68,6 +70,7 @@ export function ProductDetailClient({ product }: Props) {
 
   const { addItem } = useCartStore();
   const { hasItem, toggleItem } = useWishStore();
+  const { openLoginModal } = useAuthStore();
 
   const productSummary = {
     id: product.id,
@@ -84,8 +87,16 @@ export function ProductDetailClient({ product }: Props) {
   const selectedVariant = product.variants.find((v) => v.id === selectedVariantId) ?? product.variants[0];
   const effectivePrice = selectedVariant?.price_override ?? product.sale_price ?? product.base_price;
   const inventory = selectedVariant?.inventory;
-  const inStock = (inventory?.stock_available ?? 0) > 0;
-  const lowStock = inStock && (inventory?.stock_available ?? 0) <= (inventory?.low_stock_threshold ?? 2);
+  const availableStock = inventory?.stock_available ?? 0;
+  const inStock = availableStock > 0;
+  const lowStock = inStock && availableStock <= (inventory?.low_stock_threshold ?? 2);
+
+  // Switching size/variant can change the stock ceiling — clamp the previously chosen
+  // quantity so it never silently exceeds the new variant's availability.
+  useEffect(() => {
+    setStockError(null);
+    setQuantity((q) => Math.min(q, Math.max(availableStock, 1)));
+  }, [selectedVariantId, availableStock]);
 
   const images = useMemo(
     () => (product.images.length > 0 ? [...product.images].sort((a, b) => a.sort_order - b.sort_order) : []),
@@ -129,7 +140,20 @@ export function ProductDetailClient({ product }: Props) {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+
+    // Purchase actions require auth. Must read live state via getState() here, not the
+    // `isAuthenticated` destructured at render time — this same function is re-invoked
+    // as the login-success callback, and that stale closure would still read `false`
+    // even after login succeeds, silently re-opening the modal instead of adding the
+    // item. Closure over variant/quantity is fine (those aren't going stale the same
+    // way — the click-time selection is exactly what should survive the round-trip).
+    if (!useAuthStore.getState().isAuthenticated) {
+      openLoginModal(() => handleAddToCart());
+      return;
+    }
+
     setAdding(true);
+    setStockError(null);
     try {
       await addItem(selectedVariant.id, quantity, {
         variant: {
@@ -138,6 +162,9 @@ export function ProductDetailClient({ product }: Props) {
           color: selectedVariant.color,
           size: selectedVariant.size,
           price_override: selectedVariant.price_override,
+          inventory: inventory
+            ? { stock_available: inventory.stock_available, low_stock_threshold: inventory.low_stock_threshold }
+            : null,
         },
         product: {
           id: product.id,
@@ -150,7 +177,19 @@ export function ProductDetailClient({ product }: Props) {
       });
       setJustAdded(true);
     } catch (e: any) {
-      toast.error(e?.message ?? 'Failed to add to cart');
+      // A stale-state race (someone else bought the last piece between page load and
+      // this click) is the only way this fires now that quantity is clamped client-side.
+      // Show the real remaining count instead of the generic "Insufficient stock" message.
+      if (e?.message?.includes('Insufficient stock')) {
+        setStockError(
+          availableStock > 0
+            ? `Only ${availableStock} piece${availableStock === 1 ? '' : 's'} ${availableStock === 1 ? 'is' : 'are'} available.`
+            : 'This item just went out of stock.'
+        );
+        setQuantity((q) => Math.min(q, Math.max(availableStock, 1)));
+      } else {
+        toast.error(e?.message ?? 'Failed to add to cart');
+      }
     } finally {
       setAdding(false);
     }
@@ -396,24 +435,47 @@ export function ProductDetailClient({ product }: Props) {
           <div className="flex items-center gap-4 mb-5.5">
             <span className="text-[0.85rem] font-bold text-text">Quantity</span>
             <div className="flex items-center border-[1.5px] border-border rounded-md overflow-hidden">
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-10 h-10 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                disabled={quantity <= 1}
+                className="w-11 h-11 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
                 <Minus size={16} />
               </button>
-              <div className="w-11 text-center font-bold text-[0.95rem] text-text border-x-[1.5px] border-border leading-[40px] select-none">
+              <div className="w-11 text-center font-bold text-[0.95rem] text-text border-x-[1.5px] border-border leading-[44px] select-none">
                 {quantity}
               </div>
-              <button onClick={() => setQuantity(Math.min(10, quantity + 1))} className="w-10 h-10 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90">
+              <button
+                onClick={() => setQuantity(Math.min(Math.max(availableStock, 1), quantity + 1))}
+                disabled={inStock && quantity >= availableStock}
+                className="w-11 h-11 flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
                 <Plus size={16} />
               </button>
             </div>
           </div>
+
+          {/* Low-stock badge — sits directly above the CTA, the spec-mandated spot */}
+          {inStock && lowStock && (
+            <div className="inline-flex items-center gap-1.5 bg-red-50 text-destructive border border-red-200 text-[0.75rem] font-bold px-3 py-1.5 rounded-full w-fit mb-3">
+              Only {availableStock} left
+            </div>
+          )}
+
+          {stockError && (
+            <p className="text-destructive text-[0.8rem] font-semibold mb-3">{stockError}</p>
+          )}
 
           {/* CTA Buttons */}
           <div className="flex flex-col gap-2.5 mb-5.5">
             <button
               onClick={handleAddToCart}
               disabled={!inStock || adding || !selectedVariant}
-              className="flex items-center justify-center gap-2 p-4 bg-clay-deep text-white text-[0.95rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] hover:bg-clay hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(157,62,36,0.3)] disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed"
+              className={`flex items-center justify-center gap-2 p-4 text-[0.95rem] font-extrabold rounded-xl transition-all duration-[--t] ease-[--spring] ${
+                inStock
+                  ? 'bg-clay-deep text-white hover:bg-clay hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(62,15,47,0.3)] disabled:opacity-60 disabled:hover:translate-y-0 disabled:cursor-not-allowed'
+                  : 'bg-surface-2 text-text-light cursor-not-allowed'
+              }`}
             >
               {adding ? 'Adding...' : inStock ? '🛒 Add to Cart' : 'Out of Stock'}
             </button>
@@ -488,7 +550,7 @@ export function ProductDetailClient({ product }: Props) {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-            className="fixed bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
+            className="fixed bottom-[76px] md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[360px] z-[60] flex items-center gap-4 bg-ink text-white rounded-2xl px-5 py-3.5 shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
           >
             <div className="w-8 h-8 bg-sage rounded-full flex items-center justify-center shrink-0">
               <ShoppingCart size={15} />
@@ -506,7 +568,8 @@ export function ProductDetailClient({ product }: Props) {
             </Link>
             <button
               onClick={() => setJustAdded(false)}
-              className="shrink-0 text-white/40 hover:text-white transition-colors"
+              aria-label="Dismiss"
+              className="shrink-0 text-white/40 hover:text-white transition-colors p-2.5 -m-2.5"
             >
               <XIcon size={16} />
             </button>

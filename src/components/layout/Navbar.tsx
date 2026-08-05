@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Heart, ShoppingBag, User, Menu } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, Menu, Package } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { MobileDrawer } from './MobileDrawer';
+import { Logo } from './Logo';
 import { cn } from '@/lib/utils';
 
 export function Navbar() {
@@ -40,16 +41,16 @@ export function Navbar() {
         )}
       >
         <div className="w-full px-4 md:px-7 h-[62px] flex items-center gap-8">
-          <Link href="/" className="font-head text-2xl font-bold text-clay-deep tracking-[-0.02em] shrink-0">
-            My<span className="text-clay">lini</span>
+          <Link href="/" aria-label="Mylini home">
+            <Logo variant="dark" size="md" />
           </Link>
 
           {/* Search Pill */}
-          <div className="hidden md:flex flex-1 max-w-[460px] items-center gap-2.5 bg-surface-2 border-[1.5px] border-border-soft rounded-full px-[18px] h-10 transition-all duration-[0.22s] focus-within:border-clay-soft focus-within:shadow-[0_0_0_3px_rgba(196,101,74,0.1)] focus-within:bg-canvas">
+          <div className="hidden md:flex flex-1 max-w-[460px] items-center gap-2.5 bg-surface-2 border-[1.5px] border-border-soft rounded-full px-[18px] h-10 transition-all duration-[0.22s] focus-within:border-clay-soft focus-within:shadow-[0_0_0_3px_rgba(62,15,47,0.1)] focus-within:bg-canvas">
             <Search size={16} className="text-text-light shrink-0" strokeWidth={2} />
             <input
               type="text"
-              placeholder="Search sarees, pattupavadai, frocks..."
+              placeholder="Search Pattupavadai, Ethnic Sets, Frocks..."
               className="flex-1 border-none bg-transparent outline-none font-body text-sm text-text placeholder:text-text-light"
             />
           </div>
@@ -57,8 +58,8 @@ export function Navbar() {
           {/* Nav Links */}
           <div className="hidden md:flex gap-6 ml-1">
             {[
-              { label: 'Girls', href: '/shop/girls-traditional' },
-              { label: 'Boys', href: '/shop/boys-traditional' },
+              { label: 'Girls', href: '/shop/girls' },
+              { label: 'Boys', href: '/shop/boys' },
               { label: 'Collections', href: '/collections' },
               { label: 'About Us', href: '/about' },
               { label: 'Contact', href: '/contact' },
@@ -77,12 +78,12 @@ export function Navbar() {
           {/* Icon Buttons */}
           <div className="flex items-center gap-1.5 ml-auto">
             {/* Wishlist */}
-            <Link href="/wishlist" className="relative w-10 h-10 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
+            <Link href="/wishlist" className="relative w-11 h-11 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
               <Heart size={20} strokeWidth={1.8} />
             </Link>
 
             {/* Cart with badge */}
-            <Link href="/cart" className="relative w-10 h-10 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
+            <Link href="/cart" className="relative w-11 h-11 rounded-sm flex items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep">
               <ShoppingBag size={20} strokeWidth={1.8} />
               {isMounted && cartCount > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-clay text-white text-[0.6rem] font-extrabold flex items-center justify-center border-2 border-canvas">
@@ -91,11 +92,22 @@ export function Navbar() {
               )}
             </Link>
 
+            {/* Orders — quick access, authenticated only */}
+            {isMounted && isAuthenticated && (
+              <Link
+                href="/orders"
+                className="hidden md:flex relative w-11 h-11 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
+                title="My Orders"
+              >
+                <Package size={20} strokeWidth={1.8} />
+              </Link>
+            )}
+
             {/* User — account or login */}
             {isMounted && isAuthenticated ? (
               <Link
                 href="/account"
-                className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-clay-deep transition-all hover:bg-rose-pale"
+                className="hidden md:flex relative w-11 h-11 rounded-sm items-center justify-center text-clay-deep transition-all hover:bg-rose-pale"
                 title={user?.phone ?? 'Account'}
               >
                 <User size={20} strokeWidth={1.8} />
@@ -103,7 +115,7 @@ export function Navbar() {
             ) : (
               <button
                 onClick={handleUserClick}
-                className="hidden md:flex relative w-10 h-10 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
+                className="hidden md:flex relative w-11 h-11 rounded-sm items-center justify-center text-text-mid transition-all hover:bg-surface-2 hover:text-clay-deep"
                 title="Sign In"
               >
                 <User size={20} strokeWidth={1.8} />
@@ -113,7 +125,8 @@ export function Navbar() {
             {/* Hamburger */}
             <button
               onClick={() => setIsDrawerOpen(true)}
-              className="md:hidden flex flex-col gap-[4.5px] p-2 rounded-xs hover:bg-surface-2 transition-colors"
+              aria-label="Open menu"
+              className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-[4.5px] rounded-xs hover:bg-surface-2 transition-colors"
             >
               <span className="block w-5 h-[1.8px] bg-text-mid rounded-sm" />
               <span className="block w-5 h-[1.8px] bg-text-mid rounded-sm" />

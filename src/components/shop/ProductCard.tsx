@@ -127,8 +127,9 @@ export function ProductCard({
           {/* Wishlist heart */}
           <button
             onClick={handleWish}
+            aria-label={isWished ? 'Remove from wishlist' : 'Add to wishlist'}
             className={cn(
-              'absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-canvas/85 backdrop-blur-md flex items-center justify-center text-base shadow-s1 z-20 transition-all duration-[--t] ease-[--spring] hover:bg-white/95 active:scale-90',
+              'absolute top-1.5 right-1.5 w-11 h-11 rounded-full bg-canvas/85 backdrop-blur-md flex items-center justify-center text-base shadow-s1 z-20 transition-all duration-[--t] ease-[--spring] hover:bg-white/95 active:scale-90',
               isWished ? 'opacity-100 scale-100 text-destructive' : 'opacity-0 scale-75 text-text-mid group-hover:opacity-100 group-hover:scale-100'
             )}
           >
