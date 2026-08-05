@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter, Cormorant_Garamond } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -16,13 +16,13 @@ const inter = Inter({
   display: "swap",
 });
 
-// Wordmark-only serif — used exclusively by <Logo />, kept separate from the
-// body/heading sans fonts so the brand wordmark reads distinctly premium.
-const cormorant = Cormorant_Garamond({
-  variable: "--font-cormorant",
+// Wordmark-only — used exclusively by <Logo />, kept separate from the
+// body/heading fonts to match the official brand wordmark typeface.
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
   display: "swap",
-  weight: ["500", "600", "700"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${inter.variable} ${cormorant.variable} h-full antialiased`}
+      className={`${jakarta.variable} ${inter.variable} ${montserrat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

@@ -42,7 +42,7 @@ export function Navbar() {
       >
         <div className="w-full px-4 md:px-7 h-[62px] flex items-center gap-8">
           <Link href="/" aria-label="Mylini home">
-            <Logo variant="dark" size="md" showIcon={false} />
+            <Logo variant="dark" size="md" />
           </Link>
 
           {/* Search Pill */}
